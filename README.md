@@ -1,43 +1,51 @@
 # TweryTok
 
-TweryTok is a TikTok mod for iOS, based on TweakiTok (GPL-3.0). Most TikTok tweaks are paid or outdated; TweryTok is completely free, open-source, and packed with cutting-edge features.
+TweryTok — мод для TikTok на iOS, основанный на TweakiTok (GPL-3.0). Большинство твиков для TikTok платные или заброшены; TweryTok полностью бесплатен, открыт и набран передовыми фичами.
 
-> TweryTok is a fork of [TweakiTok by Talha Enes](https://github.com/talhaeenss/TweakiTok), GPL-3.0. All credit for the original tweak goes to Talha Enes.
+> TweryTok — это форк [TweakiTok от Talha Enes](https://github.com/talhaeenss/TweakiTok), лицензия GPL-3.0. Вся заслуга в создании оригинального твика принадлежит Talha Enes.
 
-## GitHub Actions & Prebuilt Releases
+## GitHub Actions и готовые сборки
 
-Ready-to-install `.deb` packages and modded `.ipa` releases are automatically compiled and published via GitHub Actions on every push. Check out the [Releases](https://github.com/ItzChelove4ik/TweryTok/releases) tab to grab the latest builds!
+Готовые к установке пакеты `.deb` и модифицированные релизы `.ipa` автоматически собираются и публикуются через GitHub Actions при каждом push. Готовые сборки — на вкладке [Releases](https://github.com/ItzChelove4ik/TweryTok/releases)!
 
-## Features
+## Сборка
 
-- **No Ads**: Completely removes all in-feed and sponsored ads.
-- **Live Stream Recording**: Hardware-accelerated ReplayKit 60fps internal audio & video recording with interactive controls (Pause, Resume, Stop) and automatic gallery export.
-- **Circular 3-Dot Action Menu**: Positioned right above the creator avatar for quick downloads, link copies, and clean screen toggling.
-- **Watermark-Free Video Downloads**: Save TikTok videos directly to Camera Roll without watermark.
-- **Video Cover Image Download**: Download high-resolution video cover images directly to Photos from the download action sheet. Toggleable in settings (enabled by default).
-- **HD Video Downloads**: Option to download high-definition copies.
-- **Story Downloads**: Download photos & videos from stories directly.
-- **Story Progress Bar & Seekbar**: Interactive draggable progress bar on stories for fast-forwarding and rewinding playback, synchronized with the master progress bar setting.
-- **Photos & Albums Download**: Download individual photos or batch-download full albums.
-- **Audio / Music Download**: Save music and background audio tracks.
-- **Clean Screen Mode**: Hide all UI overlays, buttons, captions, and comments.
-- **Smart Auto-Hide**: Hides all tweak buttons during 2x fast-forward long press.
-- **Full Turkish & English Localization**: Automatically detects and adapts to your system language.
-- **Follow Status Badge**: Profile badge next to username showing whether the user follows you ("Sizi takip ediyor" / "Sizi takip etmiyor"). Automatically hidden on your own profile, toggleable in settings.
-- **Copy Actions**: Copy video description, direct video link, and audio track link with a tap.
-- **Auto-Play**: Automatically scrolls to the next video when the current one finishes.
-- **Seekbar & Progress Bar**: Persistent draggable progress bar on all videos.
-- **Action Confirmations**: Confirmation prompts before Liking, Disliking, or Following.
-- **Profile Enhancements**: Save HD profile pictures, copy bio information, view total profile video count.
-- **Video Metadata**: Displays video upload date and exact like count.
-- **HD Uploads**: Forces uploads in high-definition quality.
-- **Extended Text Limits**: Extends bio and comment character limits.
-- **External Browser**: Option to open all links directly in Safari.
-- **Region Changer**: Built-in region selector to browse TikTok feeds from any country.
-- **App Lock**: Biometric Face ID / Touch ID and passcode protection.
-- **Privacy & Ghost Mode**: Disable read receipts and typing indicators in DMs.
-- **Security Bypasses**: Bypasses screenshot detection and jailbreak detection.
+Твик собирается через [Theos](https://theos.dev) с SDK iPhoneOS 16.5 (минимальный iOS 15.0, архитектура arm64).
 
-## License
+```bash
+make package FINALPACKAGE=1
+```
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - see the [LICENSE](LICENSE) file for details.
+## Возможности
+
+- **Без рекламы**: полностью убирает всю рекламу и спонсорские вставки в ленте.
+- **Запись прямых эфиров**: аппаратно-ускоренная запись через ReplayKit — видео 60fps и внутренний звук с интерактивным управлением (пауза, продолжение, стоп) и автоматическим экспортом в галерею.
+- **Круговое меню-точка (3 точки)**: располагается прямо над аватаром автора — быстрое скачивание, копирование ссылок и переключение «чистого экрана».
+- **Скачивание видео без вотермарки**: сохраняйте видео TikTok напрямую в Фотоплёнку без водяного знака.
+- **Скачивание обложки видео**: загрузка обложек видео в высоком разрешении напрямую в Фото из меню скачивания. Переключается в настройках (включено по умолчанию).
+- **Скачивание видео в HD**: опция загрузки копий в высоком разрешении.
+- **Скачивание Stories**: скачивание фото и видео из сторис напрямую.
+- **Прогресс-бар и перемотка в Stories**: интерактивный перетаскиваемый прогресс-бар в сторис для быстрой перемотки вперёд и назад, синхронизирован с основной настройкой прогресс-бара.
+- **Скачивание фото и альбомов**: скачивание отдельных фото или пакетная загрузка целых альбомов.
+- **Скачивание аудио / музыки**: сохранение музыки и фоновых аудиодорожек.
+- **Режим «Чистый экран»**: скрывает все оверлеи интерфейса, кнопки, подписи и комментарии.
+- **Умное автоскрытие**: скрывает все кнопки твика при долгом нажатии перемотки 2x.
+- **Полная локализация турецким и английским**: автоматически определяет и подстраивается под язык системы.
+- **Бейдж статуса подписки**: бейдж в профиле рядом с именем пользователя, показывающий, подписан ли он на вас («Sizi takip ediyor» / «Sizi takip etmiyor»). Автоматически скрывается в вашем собственном профиле, переключается в настройках.
+- **Действия копирования**: копирование описания видео, прямой ссылки на видео и ссылки на аудиодорожку одним тапом.
+- **Автовоспроизведение**: автоматически прокручивает к следующему видео, когда текущее заканчивается.
+- **Seekbar и прогресс-бар**: постоянный перетаскиваемый прогресс-бар на всех видео.
+- **Подтверждения действий**: запросы подтверждения перед лайком, дизлайком или подпиской.
+- **Улучшения профиля**: сохранение HD-аватаров, копирование информации из био, просмотр общего количества видео в профиле.
+- **Метаданные видео**: показывает дату загрузки видео и точное количество лайков.
+- **HD-загрузка при публикации**: принудительная публикация видео в высоком качестве.
+- **Расширенные лимиты текста**: увеличивает лимиты символов био и комментариев.
+- **Внешний браузер**: опция открытия всех ссылок напрямую в Safari.
+- **Смена региона**: встроенный селектор региона для просмотра лент TikTok любой страны.
+- **Блокировка приложения**: биометрическая защита Face ID / Touch ID и код-паролем.
+- **Приватность и режим «призрака»**: отключение прочтений сообщений и индикатора «печатает…» в личных сообщениях.
+- **Обходы безопасности**: обход детекта скриншотов и детекта джейлбрейка.
+
+## Лицензия
+
+Проект распространяется по лицензии GNU General Public License v3.0 (GPL-3.0) — подробности в файле [LICENSE](LICENSE).

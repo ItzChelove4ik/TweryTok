@@ -92,8 +92,8 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enebaled"]) {
         [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
     }
-    if (![[NSUserDefaults standardUserDefaults] objectForKey:@"BHTikTokFirstRun"]) {
-        [[NSUserDefaults standardUserDefaults] setValue:@"BHTikTokFirstRun" forKey:@"BHTikTokFirstRun"];
+    if (![[NSUserDefaults standardUserDefaults] objectForKey:@"TweryTokFirstRun"]) {
+        [[NSUserDefaults standardUserDefaults] setValue:@"TweryTokFirstRun" forKey:@"TweryTokFirstRun"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"hide_ads"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_button"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_story"];
@@ -113,8 +113,8 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
     if (![[NSUserDefaults standardUserDefaults] objectForKey:@"follow_status_badge"]) {
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"follow_status_badge"];
     }
-    if (![[NSUserDefaults standardUserDefaults] objectForKey:@"BHTikTokV2ButtonsMigrated"]) {
-        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"BHTikTokV2ButtonsMigrated"];
+    if (![[NSUserDefaults standardUserDefaults] objectForKey:@"TweryTokV2ButtonsMigrated"]) {
+        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"TweryTokV2ButtonsMigrated"];
         if (![[NSUserDefaults standardUserDefaults] objectForKey:@"download_story"]) {
             [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_story"];
         }
@@ -771,16 +771,16 @@ static BOOL isAuthenticationShowed = FALSE;
 
 %hook TTKSettingsBaseCellPlugin
 - (void)didSelectItemAtIndex:(NSInteger)index {
-    if ([self.itemModel.identifier isEqualToString:@"bhtiktok_settings"]) {
+    if ([self.itemModel.identifier isEqualToString:@"twerytok_settings"]) {
         UIViewController *top = topMostController();
         ViewController *vc = [[ViewController alloc] init];
-        UINavigationController *BHTikTokSettings = [[UINavigationController alloc] initWithRootViewController:vc];
+        UINavigationController *TweryTokSettings = [[UINavigationController alloc] initWithRootViewController:vc];
         if (@available(iOS 13.0, *)) {
             if (top.view.window.traitCollection.userInterfaceStyle) {
-                BHTikTokSettings.overrideUserInterfaceStyle = top.view.window.traitCollection.userInterfaceStyle;
+                TweryTokSettings.overrideUserInterfaceStyle = top.view.window.traitCollection.userInterfaceStyle;
             }
         }
-        [top presentViewController:BHTikTokSettings animated:true completion:nil];
+        [top presentViewController:TweryTokSettings animated:true completion:nil];
     } else {
         return %orig;
     }
@@ -788,7 +788,7 @@ static BOOL isAuthenticationShowed = FALSE;
 %end
 
 %hook AWESettingsNormalSectionViewModel
-%property (nonatomic, strong) TTKSettingsBaseCellPlugin *bhtiktokCell;
+%property (nonatomic, strong) TTKSettingsBaseCellPlugin *twerytokCell;
 
 - (NSString *)sectionHeaderTitle {
     if ([self.sectionIdentifier isEqualToString:@"twerytok_mod_section"]) {
@@ -800,21 +800,21 @@ static BOOL isAuthenticationShowed = FALSE;
 
 - (NSArray *)modelsArray {
     if ([self.sectionIdentifier isEqualToString:@"twerytok_mod_section"]) {
-        if (!self.bhtiktokCell) {
-            TTKSettingsBaseCellPlugin *BHTikTokSettingsPluginCell = [[%c(TTKSettingsBaseCellPlugin) alloc] initWithPluginContext:self.context];
+        if (!self.twerytokCell) {
+            TTKSettingsBaseCellPlugin *TweryTokSettingsPluginCell = [[%c(TTKSettingsBaseCellPlugin) alloc] initWithPluginContext:self.context];
 
-            AWESettingItemModel *BHTikTokSettingsItemModel = [[%c(AWESettingItemModel) alloc] initWithIdentifier:@"bhtiktok_settings"];
+            AWESettingItemModel *TweryTokSettingsItemModel = [[%c(AWESettingItemModel) alloc] initWithIdentifier:@"twerytok_settings"];
             BOOL tr = [BHIManager isTurkish];
             NSString *title = tr ? @"TweryTok Ayarları" : @"TweryTok Settings";
-            [BHTikTokSettingsItemModel setTitle:title];
-            [BHTikTokSettingsItemModel setDetail:title];
-            [BHTikTokSettingsItemModel setIconImage:[UIImage systemImageNamed:@"gear"]];
-            [BHTikTokSettingsItemModel setType:99];
+            [TweryTokSettingsItemModel setTitle:title];
+            [TweryTokSettingsItemModel setDetail:title];
+            [TweryTokSettingsItemModel setIconImage:[UIImage systemImageNamed:@"gear"]];
+            [TweryTokSettingsItemModel setType:99];
 
-            [BHTikTokSettingsPluginCell setItemModel:BHTikTokSettingsItemModel];
-            self.bhtiktokCell = BHTikTokSettingsPluginCell;
+            [TweryTokSettingsPluginCell setItemModel:TweryTokSettingsItemModel];
+            self.twerytokCell = TweryTokSettingsPluginCell;
         }
-        return @[self.bhtiktokCell];
+        return @[self.twerytokCell];
     }
     return %orig;
 }
@@ -1970,13 +1970,13 @@ static BOOL isAuthenticationShowed = FALSE;
     } else if ([BHIManager liveActionEnabled] && [[BHIManager selectedLiveAction] intValue] == 1) {
         UIViewController *top = topMostController();
         ViewController *vc = [[ViewController alloc] init];
-        UINavigationController *BHTikTokSettings = [[UINavigationController alloc] initWithRootViewController:vc];
+        UINavigationController *TweryTokSettings = [[UINavigationController alloc] initWithRootViewController:vc];
         if (@available(iOS 13.0, *)) {
             if (top.view.window.traitCollection.userInterfaceStyle) {
-                BHTikTokSettings.overrideUserInterfaceStyle = top.view.window.traitCollection.userInterfaceStyle;
+                TweryTokSettings.overrideUserInterfaceStyle = top.view.window.traitCollection.userInterfaceStyle;
             }
         }
-        [top presentViewController:BHTikTokSettings animated:true completion:nil];
+        [top presentViewController:TweryTokSettings animated:true completion:nil];
     } 
     else {
         %orig;
@@ -2050,7 +2050,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     sCurrentActiveCell = self;
     self.elementsHidden = false;
     if ([BHIManager downloadButton]) {
-        [self addBHTikTokMenuButton];
+        [self addTweryTokMenuButton];
     }
 }
 - (void)configureWithModel:(id)model {
@@ -2058,13 +2058,13 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     sCurrentActiveCell = self;
     self.elementsHidden = false;
     if ([BHIManager downloadButton]) {
-        [self addBHTikTokMenuButton];
+        [self addTweryTokMenuButton];
     }
 }
 - (void)layoutSubviews {
     %orig;
     if ([BHIManager downloadButton]) {
-        [self addBHTikTokMenuButton];
+        [self addTweryTokMenuButton];
     } else {
         UIView *mirror = [self viewWithTag:996];
         if (mirror) [mirror removeFromSuperview];
@@ -2082,7 +2082,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     return %orig;
 }
-%new - (void)showBHTikTokDownloadActionSheet {
+%new - (void)showTweryTokDownloadActionSheet {
     AWEAwemeBaseViewController *rootVC = self.viewController;
     if (!rootVC) {
         UIResponder *r = self;
@@ -2101,7 +2101,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     if ([BHIManager hideElementButton]) {
         NSString *cleanTitle = self.elementsHidden ? ([BHIManager isTurkish] ? @"Ekranı Göster" : @"Show Elements") : ([BHIManager isTurkish] ? @"Ekranı Temizle" : @"Clean Screen");
         [alert addAction:[UIAlertAction actionWithTitle:cleanTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self toggleBHTikTokHideElements];
+            [self toggleTweryTokHideElements];
         }]];
     }
 
@@ -2184,7 +2184,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     [top presentViewController:alert animated:YES completion:nil];
 }
-%new - (void)toggleBHTikTokHideElements {
+%new - (void)toggleTweryTokHideElements {
     AWEAwemeBaseViewController *rootVC = self.viewController;
     if ([rootVC.interactionController isKindOfClass:%c(TTKFeedInteractionLegacyMainContainerElement)]) {
         TTKFeedInteractionLegacyMainContainerElement *interactionController = rootVC.interactionController;
@@ -2217,7 +2217,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     return nil;
 }
-%new - (void)setupBHTikTokMenu:(UIButton *)sender {
+%new - (void)setupTweryTokMenu:(UIButton *)sender {
     if (!sender) return;
     BOOL tr = [BHIManager isTurkish];
     AWEAwemeBaseViewController *rootVC = self.viewController;
@@ -2239,8 +2239,8 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         NSString *cleanTitle = self.elementsHidden ? (tr ? @"Ekranı Göster" : @"Show Elements") : (tr ? @"Ekranı Temizle" : @"Clean Screen");
         UIImage *cleanIcon = [UIImage systemImageNamed:self.elementsHidden ? @"eye" : @"eye.slash"];
         UIAction *cleanAction = [UIAction actionWithTitle:cleanTitle image:cleanIcon identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
-            [self toggleBHTikTokHideElements];
-            [self setupBHTikTokMenu:sender];
+            [self toggleTweryTokHideElements];
+            [self setupTweryTokMenu:sender];
         }];
         [menuActions addObject:cleanAction];
     }
@@ -2296,11 +2296,11 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
 }
 %new - (void)bhtMenuButtonHandler:(UIButton *)sender {
     if (@available(iOS 14.0, *)) {
-        [self setupBHTikTokMenu:sender];
+        [self setupTweryTokMenu:sender];
     }
-    [self showBHTikTokDownloadActionSheet];
+    [self showTweryTokDownloadActionSheet];
 }
-%new - (void)addBHTikTokMenuButton {
+%new - (void)addTweryTokMenuButton {
     UIView *oldMirror = [self viewWithTag:996];
     if (oldMirror) [oldMirror removeFromSuperview];
 
@@ -2356,7 +2356,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     [self bringSubviewToFront:menuButton];
 
-    [self setupBHTikTokMenu:menuButton];
+    [self setupTweryTokMenu:menuButton];
     menuButton.hidden = self.elementsHidden;
     menuButton.alpha = self.elementsHidden ? 0.0 : 1.0;
 }
@@ -2598,7 +2598,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     sCurrentActiveCell = self;
     self.elementsHidden = false;
     if ([BHIManager downloadButton]) {
-        [self addBHTikTokMenuButton];
+        [self addTweryTokMenuButton];
     }
 }
 - (void)configureWithModel:(id)model {
@@ -2606,13 +2606,13 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     sCurrentActiveCell = self;
     self.elementsHidden = false;
     if ([BHIManager downloadButton]) {
-        [self addBHTikTokMenuButton];
+        [self addTweryTokMenuButton];
     }
 }
 - (void)layoutSubviews {
     %orig;
     if ([BHIManager downloadButton]) {
-        [self addBHTikTokMenuButton];
+        [self addTweryTokMenuButton];
     } else {
         UIView *mirror = [self viewWithTag:996];
         if (mirror) [mirror removeFromSuperview];
@@ -2630,7 +2630,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     return %orig;
 }
-%new - (void)showBHTikTokDownloadActionSheet {
+%new - (void)showTweryTokDownloadActionSheet {
     AWEAwemeBaseViewController *rootVC = self.viewController;
     if (!rootVC) {
         UIResponder *r = self;
@@ -2649,7 +2649,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     if ([BHIManager hideElementButton]) {
         NSString *cleanTitle = self.elementsHidden ? ([BHIManager isTurkish] ? @"Ekranı Göster" : @"Show Elements") : ([BHIManager isTurkish] ? @"Ekranı Temizle" : @"Clean Screen");
         [alert addAction:[UIAlertAction actionWithTitle:cleanTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self toggleBHTikTokHideElements];
+            [self toggleTweryTokHideElements];
         }]];
     }
 
@@ -2732,7 +2732,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     [top presentViewController:alert animated:YES completion:nil];
 }
-%new - (void)toggleBHTikTokHideElements {
+%new - (void)toggleTweryTokHideElements {
     AWEAwemeBaseViewController *rootVC = self.viewController;
     if ([rootVC.interactionController isKindOfClass:%c(TTKFeedInteractionLegacyMainContainerElement)]) {
         TTKFeedInteractionLegacyMainContainerElement *interactionController = rootVC.interactionController;
@@ -2765,7 +2765,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     return nil;
 }
-%new - (void)setupBHTikTokMenu:(UIButton *)sender {
+%new - (void)setupTweryTokMenu:(UIButton *)sender {
     if (!sender) return;
     BOOL tr = [BHIManager isTurkish];
     AWEAwemeBaseViewController *rootVC = self.viewController;
@@ -2787,8 +2787,8 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         NSString *cleanTitle = self.elementsHidden ? (tr ? @"Ekranı Göster" : @"Show Elements") : (tr ? @"Ekranı Temizle" : @"Clean Screen");
         UIImage *cleanIcon = [UIImage systemImageNamed:self.elementsHidden ? @"eye" : @"eye.slash"];
         UIAction *cleanAction = [UIAction actionWithTitle:cleanTitle image:cleanIcon identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
-            [self toggleBHTikTokHideElements];
-            [self setupBHTikTokMenu:sender];
+            [self toggleTweryTokHideElements];
+            [self setupTweryTokMenu:sender];
         }];
         [menuActions addObject:cleanAction];
     }
@@ -2844,11 +2844,11 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
 }
 %new - (void)bhtMenuButtonHandler:(UIButton *)sender {
     if (@available(iOS 14.0, *)) {
-        [self setupBHTikTokMenu:sender];
+        [self setupTweryTokMenu:sender];
     }
-    [self showBHTikTokDownloadActionSheet];
+    [self showTweryTokDownloadActionSheet];
 }
-%new - (void)addBHTikTokMenuButton {
+%new - (void)addTweryTokMenuButton {
     UIView *oldMirror = [self viewWithTag:996];
     if (oldMirror) [oldMirror removeFromSuperview];
 
@@ -2904,7 +2904,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     [self bringSubviewToFront:menuButton];
 
-    [self setupBHTikTokMenu:menuButton];
+    [self setupTweryTokMenu:menuButton];
     menuButton.hidden = self.elementsHidden;
     menuButton.alpha = self.elementsHidden ? 0.0 : 1.0;
 }

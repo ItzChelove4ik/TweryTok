@@ -224,7 +224,7 @@
 @property(nonatomic, weak, readwrite) id context;
 @property(nonatomic, copy, readwrite) NSString *sectionHeaderTitle;
 @property(nonatomic, copy, readwrite) NSString *sectionIdentifier;
-@property (nonatomic, strong) TTKSettingsBaseCellPlugin *bhtiktokCell; // tweak: cached settings row cell
+@property (nonatomic, strong) TTKSettingsBaseCellPlugin *twerytokCell; // tweak: cached settings row cell
 @end
 
 @interface AWEBaseListViewModel: NSObject
@@ -325,12 +325,12 @@
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index;
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC;
 - (void)tapDownloadVideo;
-- (void)addBHTikTokMenuButton;
+- (void)addTweryTokMenuButton;
 - (void)bhtMenuButtonHandler:(UIButton *)sender;
-- (void)setupBHTikTokMenu:(UIButton *)sender;
+- (void)setupTweryTokMenu:(UIButton *)sender;
 - (UIView *)bhtFindAvatarView:(UIView *)parent;
-- (void)showBHTikTokDownloadActionSheet;
-- (void)toggleBHTikTokHideElements;
+- (void)showTweryTokDownloadActionSheet;
+- (void)toggleTweryTokHideElements;
 @end
 @interface AWEFeedViewTemplateCell () <BHDownloadDelegate, BHMultipleDownloadDelegate>
 @end
@@ -358,12 +358,12 @@
 - (void)copyMusic:(AWEAwemeBaseViewController *)rootVC;
 - (void)copyVideo:(AWEAwemeBaseViewController *)rootVC;
 - (void)copyDecription:(AWEAwemeBaseViewController *)rootVC;
-- (void)addBHTikTokMenuButton;
+- (void)addTweryTokMenuButton;
 - (void)bhtMenuButtonHandler:(UIButton *)sender;
-- (void)setupBHTikTokMenu:(UIButton *)sender;
+- (void)setupTweryTokMenu:(UIButton *)sender;
 - (UIView *)bhtFindAvatarView:(UIView *)parent;
-- (void)showBHTikTokDownloadActionSheet;
-- (void)toggleBHTikTokHideElements;
+- (void)showTweryTokDownloadActionSheet;
+- (void)toggleTweryTokHideElements;
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index;
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC;
 @end
@@ -385,12 +385,12 @@
 - (void)copyMusic:(AWEAwemeBaseViewController *)rootVC;
 - (void)copyVideo:(AWEAwemeBaseViewController *)rootVC;
 - (void)copyDecription:(AWEAwemeBaseViewController *)rootVC;
-- (void)addBHTikTokMenuButton;
+- (void)addTweryTokMenuButton;
 - (void)bhtMenuButtonHandler:(UIButton *)sender;
-- (void)setupBHTikTokMenu:(UIButton *)sender;
+- (void)setupTweryTokMenu:(UIButton *)sender;
 - (UIView *)bhtFindAvatarView:(UIView *)parent;
-- (void)showBHTikTokDownloadActionSheet;
-- (void)toggleBHTikTokHideElements;
+- (void)showTweryTokDownloadActionSheet;
+- (void)toggleTweryTokHideElements;
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index;
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC;
 @end
