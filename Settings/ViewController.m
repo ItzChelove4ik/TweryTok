@@ -25,7 +25,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor systemBackgroundColor];
     
-    self.title = [BHIManager isTurkish] ? @"TweakiTok Ayarları" : @"TweakiTok Settings";
+    self.title = [BHIManager isTurkish] ? @"TweryTok Ayarları" : @"TweryTok Settings";
     
     if (@available(iOS 13.0, *)) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
@@ -145,7 +145,7 @@
                                                 Detail:tr ? @"Uygulamadaki tüm reklamları gizler" : @"Hide all ads from the app"
                                                    Key:@"hide_ads"];
             case 1:
-                return [self createSwitchCellWithTitle:tr ? @"TweakiTok Menü Butonu" : @"TweakiTok Menu Button"
+                return [self createSwitchCellWithTitle:tr ? @"TweryTok Menü Butonu" : @"TweryTok Menu Button"
                                                 Detail:tr ? @"Sağ tarafa (profil resminin üstüne) indirme ve ekranı temizleme butonunu ekler" : @"Add download and clear screen menu button on the right side (above avatar)"
                                                    Key:@"download_button"];
             case 2:
@@ -158,7 +158,7 @@
                                                    Key:@"remove_watermark"];
             case 4:
                 return [self createSwitchCellWithTitle:tr ? @"Ekranı Temizleme Butonu" : @"Clear Screen Button"
-                                                Detail:tr ? @"TweakiTok menüsüne ekranı temizleme seçeneğini ekler" : @"Enable clear screen option in TweakiTok menu"
+                                                Detail:tr ? @"TweryTok menüsüne ekranı temizleme seçeneğini ekler" : @"Enable clear screen option in TweryTok menu"
                                                    Key:@"remove_elements_button"];
             case 5:
                 return [self createSwitchCellWithTitle:tr ? @"Döngüyü Durdur" : @"Stop Playback"
@@ -417,7 +417,7 @@
                 UITableViewCell *liveAction = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
                 liveAction.textLabel.text = tr ? @"Eylemler" : @"Actions";
                 NSString *selectedLiveAction = [defaults valueForKey:@"live_action"];
-                NSArray *liveFuncTitles = tr ? @[@"Varsayılan", @"TweakiTok Ayarları", @"Oynatma Hızı"] : @[@"Default", @"TweakiTok Settings", @"Playback Speed"];
+                NSArray *liveFuncTitles = tr ? @[@"Varsayılan", @"TweryTok Ayarları", @"Oynatma Hızı"] : @[@"Default", @"TweryTok Settings", @"Playback Speed"];
                 if (selectedLiveAction != nil) {
                     liveAction.detailTextLabel.text = [NSString stringWithFormat:@"%@", [liveFuncTitles objectAtIndex:[selectedLiveAction integerValue]]];
                 }
@@ -448,9 +448,9 @@
         switch (indexPath.row) {
             case 0: {
                 UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-                cell.textLabel.text = @"TweakiTok";
+                cell.textLabel.text = @"TweryTok";
                 cell.textLabel.textColor = [UIColor systemBlueColor];
-                cell.detailTextLabel.text = tr ? @"Açık Kaynak Kod & Güncellemeler (talhaeenss)" : @"Source Code & Updates (talhaeenss)";
+                cell.detailTextLabel.text = tr ? @"Açık Kaynak Kod & Güncellemeler (ItzChelove4ik)" : @"Source Code & Updates (ItzChelove4ik)";
                 cell.imageView.image = [UIImage systemImageNamed:@"link"];
                 cell.detailTextLabel.textColor = [UIColor systemGrayColor];
                 return cell;
@@ -544,7 +544,7 @@
         [self presentModalNavWithRoot:playbackSpeed];
     }
     else if (indexPath.section == 7 && indexPath.row == 0){
-        NSURL *url = [NSURL URLWithString:@"https://github.com/talhaeenss/TweakiTok"];
+        NSURL *url = [NSURL URLWithString:@"https://github.com/ItzChelove4ik/TweryTok"];
         if ([[UIApplication sharedApplication] canOpenURL:url]) {
             [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
         }

@@ -15,12 +15,12 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         Class toastCls = NSClassFromString(@"AWEToast");
         if (error == nil) {
-            NSLog(@"[TweakiTok] Photo saved to Camera Roll successfully.");
+            NSLog(@"[TweryTok] Photo saved to Camera Roll successfully.");
             if ([toastCls respondsToSelector:@selector(showSuccess:)]) {
                 [toastCls showSuccess:[BHIManager isTurkish] ? @"Fotoğraf Kaydedildi" : @"Photo Saved"];
             }
         } else {
-            NSLog(@"[TweakiTok] Error saving photo to Camera Roll: %@", error);
+            NSLog(@"[TweryTok] Error saving photo to Camera Roll: %@", error);
             if ([toastCls respondsToSelector:@selector(showError:)]) {
                 [toastCls showError:[BHIManager isTurkish] ? @"Fotoğraf Kaydedilemedi" : @"Failed to Save Photo"];
             }
@@ -277,7 +277,7 @@
     }
 
     if (!fileURL && !filePath) {
-        NSLog(@"[TweakiTok] saveMedia: invalid path");
+        NSLog(@"[TweryTok] saveMedia: invalid path");
         return;
     }
 

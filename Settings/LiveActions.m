@@ -15,7 +15,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor systemBackgroundColor];
     self.title = [BHIManager isTurkish] ? @"Canlı Buton Eylemleri" : @"Live Button Actions";
-    self.liveFuncTitles = [BHIManager isTurkish] ? @[@"Varsayılan", @"TweakiTok Ayarları", @"Oynatma Hızı"] : @[@"Default", @"TweakiTok Settings", @"Playback Speed"];
+    self.liveFuncTitles = [BHIManager isTurkish] ? @[@"Varsayılan", @"TweryTok Ayarları", @"Oynatma Hızı"] : @[@"Default", @"TweryTok Settings", @"Playback Speed"];
     self.liveFuncValues = @[@0, @1, @2];
     
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:[BHIManager isTurkish] ? @"Kapat" : @"Done"

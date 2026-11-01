@@ -57,7 +57,7 @@ static __weak TTKStoryDetailTableViewCell *sCurrentActiveStoryCell = nil;
 
 
 static void showConfirmation(void (^okHandler)(void)) {
-  NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+  NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
   NSString *desc = [BHIManager localizedString:@"Are you sure?" tr:@"Emin misiniz?"];
   NSString *yes = [BHIManager localizedString:@"Yes" tr:@"Evet"];
   NSString *no = [BHIManager localizedString:@"No" tr:@"Hayır"];
@@ -69,7 +69,7 @@ static void showConfirmation(void (^okHandler)(void)) {
 static BOOL sIsConfirmingLike = NO;
 
 static void showLikeConfirmation(void (^okHandler)(void)) {
-  NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+  NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
   NSString *desc = [BHIManager localizedString:@"Do you want to like this video?" tr:@"Bu videoyu beğenmek istiyor musunuz?"];
   NSString *yes = [BHIManager localizedString:@"Yes" tr:@"Evet"];
   NSString *no = [BHIManager localizedString:@"No" tr:@"Hayır"];
@@ -705,12 +705,12 @@ static BOOL isAuthenticationShowed = FALSE;
 
     for (id sec in sections) {
         if ([sec respondsToSelector:@selector(sectionIdentifier)] && 
-            [[sec sectionIdentifier] isEqualToString:@"tweakitok_mod_section"]) {
+            [[sec sectionIdentifier] isEqualToString:@"twerytok_mod_section"]) {
             return sections;
         }
     }
 
-    // Locate the "Aktivite" / "Activity" section to place TweakiTok right above it (under "Ayarlar ve gizlilik")
+    // Locate the "Aktivite" / "Activity" section to place TweryTok right above it (under "Ayarlar ve gizlilik")
     AWESettingsNormalSectionViewModel *activitySec = nil;
     NSUInteger targetIndex = NSNotFound;
     for (NSUInteger i = 0; i < sections.count; i++) {
@@ -753,7 +753,7 @@ static BOOL isAuthenticationShowed = FALSE;
     Class secClass = activitySec ? [activitySec class] : %c(AWESettingsNormalSectionViewModel);
     AWESettingsNormalSectionViewModel *modSection = [[secClass alloc] init];
     if ([modSection respondsToSelector:@selector(setSectionIdentifier:)]) {
-        modSection.sectionIdentifier = @"tweakitok_mod_section";
+        modSection.sectionIdentifier = @"twerytok_mod_section";
     }
     BOOL tr = [BHIManager isTurkish];
     if ([modSection respondsToSelector:@selector(setSectionHeaderTitle:)]) {
@@ -791,7 +791,7 @@ static BOOL isAuthenticationShowed = FALSE;
 %property (nonatomic, strong) TTKSettingsBaseCellPlugin *bhtiktokCell;
 
 - (NSString *)sectionHeaderTitle {
-    if ([self.sectionIdentifier isEqualToString:@"tweakitok_mod_section"]) {
+    if ([self.sectionIdentifier isEqualToString:@"twerytok_mod_section"]) {
         BOOL tr = [BHIManager isTurkish];
         return tr ? @"TikTok Mod Ayarları" : @"TikTok Mod Settings";
     }
@@ -799,13 +799,13 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 
 - (NSArray *)modelsArray {
-    if ([self.sectionIdentifier isEqualToString:@"tweakitok_mod_section"]) {
+    if ([self.sectionIdentifier isEqualToString:@"twerytok_mod_section"]) {
         if (!self.bhtiktokCell) {
             TTKSettingsBaseCellPlugin *BHTikTokSettingsPluginCell = [[%c(TTKSettingsBaseCellPlugin) alloc] initWithPluginContext:self.context];
 
             AWESettingItemModel *BHTikTokSettingsItemModel = [[%c(AWESettingItemModel) alloc] initWithIdentifier:@"bhtiktok_settings"];
             BOOL tr = [BHIManager isTurkish];
-            NSString *title = tr ? @"TweakiTok Ayarları" : @"TweakiTok Settings";
+            NSString *title = tr ? @"TweryTok Ayarları" : @"TweryTok Settings";
             [BHTikTokSettingsItemModel setTitle:title];
             [BHTikTokSettingsItemModel setDetail:title];
             [BHTikTokSettingsItemModel setIconImage:[UIImage systemImageNamed:@"gear"]];
@@ -2096,7 +2096,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     if (!rootVC) return;
 
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[BHIManager isTurkish] ? @"TweakiTok Menüsü" : @"TweakiTok Menu" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[BHIManager isTurkish] ? @"TweryTok Menüsü" : @"TweryTok Menu" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
 
     if ([BHIManager hideElementButton]) {
         NSString *cleanTitle = self.elementsHidden ? ([BHIManager isTurkish] ? @"Ekranı Göster" : @"Show Elements") : ([BHIManager isTurkish] ? @"Ekranı Temizle" : @"Clean Screen");
@@ -2290,7 +2290,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     UIMenu *copyMenu = [UIMenu menuWithTitle:tr ? @"Kopyalama Seçenekleri" : @"Copy Menu" image:[UIImage systemImageNamed:@"doc.on.doc"] identifier:nil options:0 children:@[copyVideoAction, copyMusicAction, copyDescAction]];
     [menuActions addObject:copyMenu];
 
-    UIMenu *mainMenu = [UIMenu menuWithTitle:tr ? @"TweakiTok Menüsü" : @"TweakiTok Menu" children:menuActions];
+    UIMenu *mainMenu = [UIMenu menuWithTitle:tr ? @"TweryTok Menüsü" : @"TweryTok Menu" children:menuActions];
     [sender setMenu:mainMenu];
     sender.showsMenuAsPrimaryAction = YES;
 }
@@ -2385,7 +2385,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
 
     if (!downloadableURL) {
-        NSString *title = [BHIManager isTurkish] ? @"TweakiTok, Selam" : @"TweakiTok, Hi";
+        NSString *title = [BHIManager isTurkish] ? @"TweryTok, Selam" : @"TweryTok, Hi";
         NSString *desc = [BHIManager isTurkish] ? @"Kapak resmi bağlantısı bulunamadı." : @"Could not obtain cover image download URL.";
         NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -2472,7 +2472,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+        NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
         NSString *desc = [BHIManager localizedString:@"Could not copy music link." tr:@"Müzik bağlantısı kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -2484,7 +2484,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+        NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
         NSString *desc = [BHIManager localizedString:@"Could not copy video link." tr:@"Video bağlantısı kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -2502,7 +2502,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = video_description;
     } else {
-        NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+        NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
         NSString *desc = [BHIManager localizedString:@"Could not copy description." tr:@"Açıklama kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -2644,7 +2644,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
     if (!rootVC) return;
 
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[BHIManager isTurkish] ? @"TweakiTok Menüsü" : @"TweakiTok Menu" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:[BHIManager isTurkish] ? @"TweryTok Menüsü" : @"TweryTok Menu" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
 
     if ([BHIManager hideElementButton]) {
         NSString *cleanTitle = self.elementsHidden ? ([BHIManager isTurkish] ? @"Ekranı Göster" : @"Show Elements") : ([BHIManager isTurkish] ? @"Ekranı Temizle" : @"Clean Screen");
@@ -2838,7 +2838,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     UIMenu *copyMenu = [UIMenu menuWithTitle:tr ? @"Kopyalama Seçenekleri" : @"Copy Menu" image:[UIImage systemImageNamed:@"doc.on.doc"] identifier:nil options:0 children:@[copyVideoAction, copyMusicAction, copyDescAction]];
     [menuActions addObject:copyMenu];
 
-    UIMenu *mainMenu = [UIMenu menuWithTitle:tr ? @"TweakiTok Menüsü" : @"TweakiTok Menu" children:menuActions];
+    UIMenu *mainMenu = [UIMenu menuWithTitle:tr ? @"TweryTok Menüsü" : @"TweryTok Menu" children:menuActions];
     [sender setMenu:mainMenu];
     sender.showsMenuAsPrimaryAction = YES;
 }
@@ -2933,7 +2933,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
 
     if (!downloadableURL) {
-        NSString *title = [BHIManager isTurkish] ? @"TweakiTok, Selam" : @"TweakiTok, Hi";
+        NSString *title = [BHIManager isTurkish] ? @"TweryTok, Selam" : @"TweryTok, Hi";
         NSString *desc = [BHIManager isTurkish] ? @"Kapak resmi bağlantısı bulunamadı." : @"Could not obtain cover image download URL.";
         NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -3020,7 +3020,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+        NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
         NSString *desc = [BHIManager localizedString:@"Could not copy music link." tr:@"Müzik bağlantısı kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -3032,7 +3032,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+        NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
         NSString *desc = [BHIManager localizedString:@"Could not copy video link." tr:@"Video bağlantısı kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -3050,7 +3050,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = video_description;
     } else {
-        NSString *title = [BHIManager localizedString:@"TweakiTok, Hi" tr:@"TweakiTok, Selam"];
+        NSString *title = [BHIManager localizedString:@"TweryTok, Hi" tr:@"TweryTok, Selam"];
         NSString *desc = [BHIManager localizedString:@"Could not copy description." tr:@"Açıklama kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -3159,7 +3159,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         rawModel = [sCurrentActiveStoryCell bht_storyModel];
     }
     if (!rawModel) {
-        NSString *title = [BHIManager isTurkish] ? @"TweakiTok, Selam" : @"TweakiTok, Hi";
+        NSString *title = [BHIManager isTurkish] ? @"TweryTok, Selam" : @"TweryTok, Hi";
         NSString *desc = [BHIManager isTurkish] ? @"Hikaye medyası bulunamadı." : @"Could not find story media.";
         NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
@@ -3216,7 +3216,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     }
 
     if (!downloadURL) {
-        NSString *title = [BHIManager isTurkish] ? @"TweakiTok, Selam" : @"TweakiTok, Hi";
+        NSString *title = [BHIManager isTurkish] ? @"TweryTok, Selam" : @"TweryTok, Hi";
         NSString *desc = [BHIManager isTurkish] ? @"Hikaye indirme bağlantısı alınamadı." : @"Could not obtain story download URL.";
         NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];

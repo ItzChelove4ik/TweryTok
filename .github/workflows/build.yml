@@ -1,4 +1,4 @@
-name: Build TweakiTok (All Variants)
+name: Build TweryTok (All Variants)
 
 on:
   push:
@@ -101,13 +101,13 @@ jobs:
           cp packages/*_iphoneos-arm64.deb artifacts/
 
           # raw universal (arm64+arm64e) dylib for TrollStore/TrollFools injection
-          DYLIB_PATH=$(find .theos/_ -name "TweakiTok.dylib" | head -n 1)
+          DYLIB_PATH=$(find .theos/_ -name "TweryTok.dylib" | head -n 1)
           if [ ! -f "$DYLIB_PATH" ]; then
-            echo "ERROR: TweakiTok.dylib not found in .theos/_ staging dir"
+            echo "ERROR: TweryTok.dylib not found in .theos/_ staging dir"
             exit 1
           fi
           echo "Found dylib at: $DYLIB_PATH"
-          cp "$DYLIB_PATH" artifacts/TweakiTok.dylib
+          cp "$DYLIB_PATH" artifacts/TweryTok.dylib
 
       - name: build rootful variant (arm64)
         run: |
@@ -145,8 +145,8 @@ jobs:
           # expect exactly 4 files: 1 dylib + 3 debs (rootless / rootful / roothide)
           FILE_COUNT=$(ls -1 artifacts/ | wc -l | tr -d ' ')
           DEB_COUNT=$(ls -1 artifacts/*.deb 2>/dev/null | wc -l | tr -d ' ')
-          if [ "$FILE_COUNT" -ne 4 ] || [ "$DEB_COUNT" -ne 3 ] || [ ! -f artifacts/TweakiTok.dylib ]; then
-            echo "ERROR: expected 4 artifacts (3 debs + TweakiTok.dylib), got $FILE_COUNT files ($DEB_COUNT debs)"
+          if [ "$FILE_COUNT" -ne 4 ] || [ "$DEB_COUNT" -ne 3 ] || [ ! -f artifacts/TweryTok.dylib ]; then
+            echo "ERROR: expected 4 artifacts (3 debs + TweryTok.dylib), got $FILE_COUNT files ($DEB_COUNT debs)"
             exit 1
           fi
           echo "All 4 artifacts present."
@@ -158,7 +158,7 @@ jobs:
           path: artifacts/
           retention-days: 30
 
-      - name: inject TweakiTok into IPA
+      - name: inject TweryTok into IPA
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -202,7 +202,7 @@ jobs:
             echo "Creating base-ipa release in current repo for future instant builds..."
             gh release create base-ipa ipa_working/com.zhiliaoapp.musically-47.5.0-Decrypted.ipa \
               --title "Base Decrypted TikTok IPA (v47.5.0)" \
-              --notes "Base decrypted TikTok IPA (com.zhiliaoapp.musically-47.5.0-Decrypted.ipa) used for TweakiTok builds." || true
+              --notes "Base decrypted TikTok IPA (com.zhiliaoapp.musically-47.5.0-Decrypted.ipa) used for TweryTok builds." || true
           fi
 
           if [ -z "$IPA_FILE" ] || [ ! -f "$IPA_FILE" ]; then
@@ -237,18 +237,18 @@ jobs:
           chmod +x "$APP_PATH/Frameworks/CydiaSubstrate.framework/CydiaSubstrate"
           install_name_tool -id "@rpath/CydiaSubstrate.framework/CydiaSubstrate" "$APP_PATH/Frameworks/CydiaSubstrate.framework/CydiaSubstrate"
 
-          echo "Injecting TweakiTok.dylib into $APP_PATH/$BINARY_NAME..."
-          cp artifacts/TweakiTok.dylib "$APP_PATH/Frameworks/"
-          chmod +x "$APP_PATH/Frameworks/TweakiTok.dylib"
-          install_name_tool -id "@rpath/TweakiTok.dylib" "$APP_PATH/Frameworks/TweakiTok.dylib"
+          echo "Injecting TweryTok.dylib into $APP_PATH/$BINARY_NAME..."
+          cp artifacts/TweryTok.dylib "$APP_PATH/Frameworks/"
+          chmod +x "$APP_PATH/Frameworks/TweryTok.dylib"
+          install_name_tool -id "@rpath/TweryTok.dylib" "$APP_PATH/Frameworks/TweryTok.dylib"
 
           # Inject load command
-          insert_dylib --inplace --all-yes --no-strip-codesig "@rpath/TweakiTok.dylib" "$APP_PATH/$BINARY_NAME"
+          insert_dylib --inplace --all-yes --no-strip-codesig "@rpath/TweryTok.dylib" "$APP_PATH/$BINARY_NAME"
           chmod +x "$APP_PATH/$BINARY_NAME"
 
           echo "Repacking modded IPA..."
           cd ipa_working/extracted
-          zip -qry ../../ipa_output/TweakiTok_Modded.ipa Payload
+          zip -qry ../../ipa_output/TweryTok_Modded.ipa Payload
           cd ../..
 
           echo "Modded IPA created successfully:"
@@ -279,7 +279,7 @@ jobs:
             gh release delete latest --yes || true
             git push --delete origin latest 2>/dev/null || true
             gh release create latest release_assets/* \
-              --title "TweakiTok Latest Release" \
-              --notes "TweakiTok Modded IPA, TrollStore / TrollFools universal dylib and Jailbreak deb packages (rootless, rootful, roothide)."
+              --title "TweryTok Latest Release" \
+              --notes "TweryTok Modded IPA, TrollStore / TrollFools universal dylib and Jailbreak deb packages (rootless, rootful, roothide)."
             echo "All release assets published successfully!"
           fi

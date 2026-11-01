@@ -1,9 +1,9 @@
-Package: com.talha.tweakiktok
-Name: TweakiTok
+Package: com.itzch.twerytok
+Name: TweryTok
 Version: 1.0.0
 Architecture: iphoneos-arm
-Description: TweakiTok - An awesome all-in-one TikTok tweak with live recording, media downloads, and UI customization.
-Maintainer: Talha Enes
-Author: Talha Enes
+Description: TweryTok - TikTok mod based on TweakiTok (GPL-3.0), fork by ItzChelove4ik
+Maintainer: ItzChelove4ik
+Author: ItzChelove4ik (based on TweakiTok by Talha Enes)
 Section: Tweaks
 Depends: mobilesubstrate

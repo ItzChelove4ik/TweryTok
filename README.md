@@ -1,10 +1,12 @@
-# TweakiTok
+# TweryTok
 
-An awesome, modern TikTok tweak for iOS. Most TikTok tweaks are paid or outdated; TweakiTok is completely free, open-source, and packed with cutting-edge features.
+TweryTok is a TikTok mod for iOS, based on TweakiTok (GPL-3.0). Most TikTok tweaks are paid or outdated; TweryTok is completely free, open-source, and packed with cutting-edge features.
+
+> TweryTok is a fork of [TweakiTok by Talha Enes](https://github.com/talhaeenss/TweakiTok), GPL-3.0. All credit for the original tweak goes to Talha Enes.
 
 ## GitHub Actions & Prebuilt Releases
 
-Ready-to-install `.deb` packages and modded `.ipa` releases are automatically compiled and published via GitHub Actions on every push. Check out the [Releases](https://github.com/talhaeenss/TweakiTok/releases) tab to grab the latest builds!
+Ready-to-install `.deb` packages and modded `.ipa` releases are automatically compiled and published via GitHub Actions on every push. Check out the [Releases](https://github.com/ItzChelove4ik/TweryTok/releases) tab to grab the latest builds!
 
 ## Features
 
