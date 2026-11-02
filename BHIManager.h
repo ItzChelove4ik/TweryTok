@@ -7,8 +7,6 @@
 + (BOOL)hideAds;
 + (BOOL)downloadButton;
 + (BOOL)downloadCoverImage;
-+ (BOOL)downloadStory;
-+ (BOOL)liveRecordButton;
 + (BOOL)shareSheet;
 + (BOOL)removeWatermark;
 + (BOOL)hideElementButton;
@@ -16,7 +14,6 @@
 + (BOOL)autoPlay;
 + (BOOL)stopPlay;
 + (BOOL)progressBar;
-+ (BOOL)transparentCommnet;
 + (BOOL)showUsername;
 + (BOOL)disablePullToRefresh;
 + (BOOL)disableUnsensitive;
@@ -33,25 +30,11 @@
 + (BOOL)profileVideoCount;
 + (BOOL)videoLikeCount;
 + (BOOL)videoUploadDate;
-+ (BOOL)alwaysOpenSafari;
 + (BOOL)regionChangingEnabled;
 + (NSDictionary *)selectedRegion;
-+ (NSNumber *)selectedLiveAction;
-+ (BOOL)liveActionEnabled;
-+ (BOOL)speedEnabled;
-+ (NSNumber *)selectedSpeed;
 + (BOOL)fakeChangesEnabled;
 + (BOOL)fakeVerified;
-+ (BOOL)uploadHD;
-+ (BOOL)extendedBio;
-+ (BOOL)extendedComment;
-+ (BOOL)appLock;
 + (BOOL)disableScreenshotDetection;
-+ (BOOL)ghostReadReceipts;
-+ (BOOL)ghostTyping;
-+ (BOOL)showRegionChangeOption;
-+ (NSNumber *)offlineVideosLimit;
-+ (NSDictionary *)abOverrides;
 + (void)showSaveVC:(id)item;
 + (void)cleanCache;
 + (BOOL)isEmpty:(NSURL *)url;
@@ -59,4 +42,21 @@
 + (void)saveMedia:(id)item fileExtension:(id)fileExtension;
 + (BOOL)isTurkish;
 + (NSString *)localizedString:(NSString *)en tr:(NSString *)tr;
+
++ (BOOL)showRegionChangeOption;
+
+#pragma mark - Auto Streak (TweryTok)
++ (BOOL)streakAutoSendEnabled;
++ (NSInteger)streakSendHour;
++ (NSInteger)streakSendMinute;
++ (NSString *)streakTimeZoneIdentifier;   // default Europe/Moscow
++ (NSString *)streakStickerID;            // default: TikTok default sticker id
++ (NSArray<NSString *> *)streakExcludedConversations;
++ (NSDictionary *)streakLastSentDates;    // conversationId -> ISO date string (day)
++ (void)setStreakLastSentDate:(NSString *)convId;
+
+#pragma mark - Like Color (TweryTok)
++ (BOOL)likeColorEnabled;
++ (NSString *)likeColorHex;               // nil = reset to default
++ (UIColor *)likeColor;
 @end

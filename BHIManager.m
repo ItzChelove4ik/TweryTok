@@ -39,18 +39,6 @@
     }
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"download_cover_image"];
 }
-+ (BOOL)downloadStory {
-    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"download_story"] == nil) {
-        return YES;
-    }
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"download_story"];
-}
-+ (BOOL)liveRecordButton {
-    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"live_record_button"] == nil) {
-        return YES;
-    }
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"live_record_button"];
-}
 + (BOOL)downloadButton {
     if ([[NSUserDefaults standardUserDefaults] objectForKey:@"download_button"] == nil) {
         return YES;
@@ -80,9 +68,6 @@
 }
 + (BOOL)progressBar {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"show_porgress_bar"];
-}
-+ (BOOL)transparentCommnet {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"transparent_commnet"];
 }
 + (BOOL)showUsername {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"show_username"];
@@ -129,27 +114,8 @@
 + (BOOL)profileVideoCount {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"uploaded_videos"];
 }
-+ (BOOL)alwaysOpenSafari {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"openInBrowser"];
-}
 + (BOOL)regionChangingEnabled {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"en_region"];
-}
-+ (BOOL)speedEnabled {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"playback_en"];
-}
-+ (BOOL)liveActionEnabled {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"en_livefunc"];
-}
-+ (NSNumber *)selectedLiveAction {
-    return [[NSUserDefaults standardUserDefaults] objectForKey:@"live_action"];
-}
-+ (NSNumber *)selectedSpeed {
-    NSNumber *speed = [[NSUserDefaults standardUserDefaults] objectForKey:@"playback_speed"];
-    if (speed == nil) {
-        return @2.0;
-    }
-    return speed;
 }
 + (BOOL)videoLikeCount {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"video_like_count"];
@@ -166,32 +132,8 @@
 + (BOOL)fakeVerified {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"fake_verify"];
 }
-+ (BOOL)extendedBio {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"extended_bio"];
-}
-+ (BOOL)extendedComment {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"extendedComment"];
-}
-+ (BOOL)uploadHD {
-    if ([[NSUserDefaults standardUserDefaults] objectForKey:@"upload_hd"] == nil) {
-        return YES;
-    }
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"upload_hd"];
-}
-+ (BOOL)appLock {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"padlock"];
-}
 + (BOOL)disableScreenshotDetection {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"disable_screenshot_detection"];
-}
-+ (BOOL)ghostReadReceipts {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"ghost_read_receipts"];
-}
-+ (BOOL)ghostTyping {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"ghost_typing"];
-}
-+ (BOOL)showRegionChangeOption {
-    return [[NSUserDefaults standardUserDefaults] boolForKey:@"show_region_change_option"];
 }
 + (void)cleanCache {
     NSArray <NSURL *> *DocumentFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject] includingPropertiesForKeys:@[] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
@@ -398,12 +340,6 @@
     NSNumber *number = [NSNumber numberWithFloat:per];
     return [numberFormatter stringFromNumber:number];
 }
-+ (NSNumber *)offlineVideosLimit {
-    return [[NSUserDefaults standardUserDefaults] objectForKey:@"offline_videos_limit"];
-}
-+ (NSDictionary *)abOverrides {
-    return [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"ab_overrides"];
-}
 + (BOOL)isTurkish {
     NSString *appLang = [[NSUserDefaults standardUserDefaults] stringForKey:@"current_i18n_language"];
     if (appLang && [appLang hasPrefix:@"tr"]) {
@@ -423,4 +359,72 @@
 + (NSString *)localizedString:(NSString *)en tr:(NSString *)tr {
     return [self isTurkish] ? tr : en;
 }
+
++ (BOOL)showRegionChangeOption {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"show_region_change_option"];
+}
+
+#pragma mark - Auto Streak (TweryTok)
+
++ (BOOL)streakAutoSendEnabled {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"twery_streak_enabled"];
+}
++ (NSInteger)streakSendHour {
+    NSInteger h = [[NSUserDefaults standardUserDefaults] integerForKey:@"twery_streak_hour"];
+    return (h >= 0 && h <= 23) ? h : 12;  // default 12:00
+}
++ (NSInteger)streakSendMinute {
+    NSInteger m = [[NSUserDefaults standardUserDefaults] integerForKey:@"twery_streak_minute"];
+    return (m >= 0 && m <= 59) ? m : 0;
+}
++ (NSString *)streakTimeZoneIdentifier {
+    NSString *tz = [[NSUserDefaults standardUserDefaults] stringForKey:@"twery_streak_timezone"];
+    if (tz.length == 0) return @"Europe/Moscow";
+    // валидация
+    NSArray<NSString *> *known = [NSTimeZone performSelector:@selector(knownTimeZoneNames)];
+    if (![known containsObject:tz]) return @"Europe/Moscow";
+    return tz;
+}
++ (NSString *)streakStickerID {
+    NSString *sid = [[NSUserDefaults standardUserDefaults] stringForKey:@"twery_streak_sticker_id"];
+    return sid.length > 0 ? sid : @"1";  // "1" — placeholder, fire sticker TBD on-device
+}
++ (NSArray<NSString *> *)streakExcludedConversations {
+    return [[NSUserDefaults standardUserDefaults] stringArrayForKey:@"twery_streak_excluded"];
+}
++ (NSDictionary *)streakLastSentDates {
+    return [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"twery_streak_last_sent"];
+}
++ (void)setStreakLastSentDate:(NSString *)convId {
+    NSMutableDictionary *d = [[[NSUserDefaults standardUserDefaults] dictionaryForKey:@"twery_streak_last_sent"] mutableCopy] ?: [NSMutableDictionary new];
+    NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+    fmt.dateFormat = @"yyyy-MM-dd";
+    fmt.timeZone = [NSTimeZone timeZoneWithName:[self streakTimeZoneIdentifier]];
+    d[convId] = [fmt stringFromDate:[NSDate date]];
+    [[NSUserDefaults standardUserDefaults] setObject:d forKey:@"twery_streak_last_sent"];
+}
+
+#pragma mark - Like Color (TweryTok)
+
++ (BOOL)likeColorEnabled {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"twery_like_color_enabled"];
+}
++ (NSString *)likeColorHex {
+    return [[NSUserDefaults standardUserDefaults] stringForKey:@"twery_like_color_hex"];
+}
++ (UIColor *)likeColor {
+    NSString *hex = [self likeColorHex];
+    if (hex.length < 6) return nil;
+    // #RRGGBB
+    NSRange r = [hex rangeOfString:@"#" options:NSBackwardsSearch];
+    if (r.location != NSNotFound) hex = [hex substringFromIndex:r.location + 1];
+    if (hex.length != 6) return nil;
+    unsigned rgb = 0;
+    [[NSScanner scannerWithString:hex] scanHexInt:&rgb];
+    return [UIColor colorWithRed:((rgb >> 16) & 0xFF) / 255.0
+                           green:((rgb >> 8) & 0xFF) / 255.0
+                            blue:(rgb & 0xFF) / 255.0
+                           alpha:1.0];
+}
+
 @end

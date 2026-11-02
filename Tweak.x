@@ -1,4 +1,6 @@
 #import "TikTokHeaders.h"
+#import "TWSeriesManager.h"
+#import "TWLikeColorManager.h"
 #import <objc/runtime.h>
 
 NSArray *jailbreakPaths;
@@ -6,8 +8,6 @@ NSArray *jailbreakPaths;
 static __weak id sCurrentActiveCell = nil;
 static __weak AWEPlayVideoPlayerController *sCurrentActivePlayerController = nil;
 static __weak TTVideoEngine *sCurrentActiveVideoEngine = nil;
-static __weak AWEAwemeModel *sCurrentShareAweme = nil;
-static __weak TTKStoryDetailTableViewCell *sCurrentActiveStoryCell = nil;
 
 @implementation BHTMenuButton
 - (void)setHighlighted:(BOOL)highlighted {
@@ -89,6 +89,7 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
 %hook AppDelegate
 - (_Bool)application:(UIApplication *)application didFinishLaunchingWithOptions:(id)arg2 {
     %orig;
+    [[TWSeriesManager shared] start];
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enebaled"]) {
         [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
     }
@@ -96,16 +97,12 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
         [[NSUserDefaults standardUserDefaults] setValue:@"TweryTokFirstRun" forKey:@"TweryTokFirstRun"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"hide_ads"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_button"];
-        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_story"];
-        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"live_record_button"];
         [[NSUserDefaults standardUserDefaults] setBool:false forKey:@"remove_elements_button"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"show_porgress_bar"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"save_profile"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"copy_profile_information"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_cover_image"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"follow_status_badge"];
-        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"extended_bio"];
-        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"extendedComment"];
     }
     if (![[NSUserDefaults standardUserDefaults] objectForKey:@"download_cover_image"]) {
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_cover_image"];
@@ -115,23 +112,9 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
     }
     if (![[NSUserDefaults standardUserDefaults] objectForKey:@"TweryTokV2ButtonsMigrated"]) {
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"TweryTokV2ButtonsMigrated"];
-        if (![[NSUserDefaults standardUserDefaults] objectForKey:@"download_story"]) {
-            [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_story"];
-        }
         [[NSUserDefaults standardUserDefaults] setBool:false forKey:@"remove_elements_button"];
         if (![[NSUserDefaults standardUserDefaults] objectForKey:@"download_button"]) {
             [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_button"];
-        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_story"];
-        }
-    }
-    // Labs: re-apply A/B overrides through TikTok's own debug-override mock layer
-    // (AWEABTestManager debugOverride_* API, verified present in MusicallyCore 46.5.0).
-    // The %hook backstops below cover readers that bypass the mock layer.
-    NSDictionary *abOverrides = [BHIManager abOverrides];
-    if (abOverrides.count > 0) {
-        [%c(AWEABTestManager) debugOverride_EnabledMock:YES];
-        for (NSString *abKey in abOverrides) {
-            [%c(AWEABTestManager) debugOverride_SetMockValue:abOverrides[abKey] forKey:abKey];
         }
     }
     [BHIManager cleanCache];
@@ -139,37 +122,9 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
 }
 
 static BOOL isAuthenticationShowed = FALSE;
-- (void)applicationDidBecomeActive:(id)arg1 { // old app lock TODO: add face-id
-  %orig;
-
-  if ([BHIManager appLock] && !isAuthenticationShowed) {
-    UIViewController *rootController = [[self window] rootViewController];
-    SecurityViewController *securityViewController = [SecurityViewController new];
-    securityViewController.modalPresentationStyle = UIModalPresentationOverFullScreen;
-    [rootController presentViewController:securityViewController animated:YES completion:nil];
-    isAuthenticationShowed = TRUE;
-  }
-}
-
-- (void)applicationWillEnterForeground:(id)arg1 {
-  %orig;
-  isAuthenticationShowed = FALSE;
-}
-%end
-
-%hook TTKMediaSpeedControlService
-- (void)setPlaybackRate:(CGFloat)arg1 {
-    NSNumber *speed = [BHIManager selectedSpeed];
-    if (![BHIManager speedEnabled] || [speed isEqualToNumber:@1]) {
-        return %orig;
-    }
-    if ([BHIManager speedEnabled]) {
-        if ([BHIManager selectedSpeed]) {
-            return %orig([speed floatValue]);
-        }
-    } else {
-        return %orig;
-    }
+- (void)applicationDidBecomeActive:(id)arg1 {
+    %orig;
+    [[TWSeriesManager shared] checkAndCatchUp];
 }
 %end
 
@@ -820,38 +775,6 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %end
 
-%hook SparkViewController // alwaysOpenSafari
-- (void)viewWillAppear:(BOOL)animated {
-    if (![BHIManager alwaysOpenSafari]) {
-        return %orig;
-    }
-    
-    // NSURL *url = self.originURL;
-    NSURLComponents *components = [NSURLComponents componentsWithURL:self.originURL resolvingAgainstBaseURL:NO];
-    NSString *searchParameter = @"url";
-    NSString *searchValue = nil;
-    
-    for (NSURLQueryItem *queryItem in components.queryItems) {
-        if ([queryItem.name isEqualToString:searchParameter]) {
-            searchValue = queryItem.value;
-            break;
-        }
-    }
-    
-    // In-app browser is used for two-factor authentication with security key,
-    // login will not complete successfully if it's redirected to Safari
-    // if ([urlStr containsString:@"twitter.com/account/"] || [urlStr containsString:@"twitter.com/i/flow/"]) {
-    //     return %orig;
-    // }
-
-    if (searchValue) {
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:searchValue] options:@{} completionHandler:nil];
-        [self didTapCloseButton];
-    } else {
-        return %orig;
-    }
-}
-%end
 
 %hook CTCarrier // changes country 
 - (NSString *)mobileCountryCode {
@@ -1389,47 +1312,7 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %end
 
-%hook ACCCreationPublishAction
-- (BOOL)is_open_hd {
-    if ([BHIManager uploadHD]) {
-        return 1;
-    }
-    return %orig;
-}
-- (void)setIs_open_hd:(BOOL)arg1 {
-    if ([BHIManager uploadHD]) {
-        %orig(1);
-    }
-    else {
-        return %orig;
-    }
-}
-- (BOOL)is_have_hd {
-    if ([BHIManager uploadHD]) {
-        return 1;
-    }
-    return %orig;
-}
-- (void)setIs_have_hd:(BOOL)arg1 {
-    if ([BHIManager uploadHD]) {
-        %orig(1);
-    }
-    else {
-        return %orig;
-    }
-}
 
-%end
-
-%hook TTKCommentPanelViewController
-- (void)viewDidLoad {
-    %orig;
-    if ([BHIManager transparentCommnet]){
-        UIView *commnetView = [self view];
-        [commnetView setAlpha:0.90];
-    }
-}
-%end
 
 %hook AWEAwemeModel // no ads, show porgress bar
 - (id)initWithDictionary:(id)arg1 error:(id *)arg2 {
@@ -1533,16 +1416,6 @@ static BOOL isAuthenticationShowed = FALSE;
 - (void)play {
     sCurrentActiveVideoEngine = self;
     %orig;
-    if ([BHIManager progressBar]) {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            UIViewController *top = topMostController();
-            if (top && [NSStringFromClass([top class]) containsString:@"Story"]) {
-                if ([top respondsToSelector:@selector(bht_layoutStoryProgressBar)]) {
-                    [top performSelector:@selector(bht_layoutStoryProgressBar)];
-                }
-            }
-        });
-    }
 }
 %end
 
@@ -1622,34 +1495,6 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %end
 
-%hook AWEIMMessageReadComponent // ghost mode: read receipts (feature #2)
-// stops the "mark as read" sync to TikTok's servers; messages still appear read locally
-- (void)p_markReadSyncToServerWithMessage:(id)arg1 {
-    if ([BHIManager ghostReadReceipts]) {
-        return;
-    }
-    %orig;
-}
-%end
-
-%hook AWEIMMessageDataController // ghost mode: read receipts (belt-and-braces, same selector)
-- (void)p_markReadSyncToServerWithMessage:(id)arg1 {
-    if ([BHIManager ghostReadReceipts]) {
-        return;
-    }
-    %orig;
-}
-%end
-
-%hook TIMInputStatusManager // ghost mode: typing indicators (feature #2)
-// blocks the input-status ("typing...") signal at the IM SDK layer
-- (void)sendInputStatusWithConversationID:(id)arg1 inputStatus:(long long)arg2 {
-    if ([BHIManager ghostTyping]) {
-        return;
-    }
-    %orig;
-}
-%end
 
 %hook AWEAwemeACLItem // remove default watermark
 - (void)setWatermarkType:(NSUInteger)arg1 {
@@ -1880,15 +1725,6 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %end
 
-%hook AWETextInputController
-- (NSUInteger)maxLength {
-    if ([BHIManager extendedComment]) {
-        return 500;
-    }
-
-    return %orig;
-}
-%end
 %hook AWEPlayVideoPlayerController
 - (void)containerDidFullyDisplayWithReason:(NSInteger)arg1 {
     if ([[[self container] parentViewController] isKindOfClass:%c(AWENewFeedTableViewController)] && [BHIManager skipRecommendations]) {
@@ -1900,15 +1736,6 @@ static BOOL isAuthenticationShowed = FALSE;
     }else {
         %orig;
     }
-}
-%end
-%hook AWEProfileEditTextViewController
-- (NSInteger)maxTextLength {
-    if ([BHIManager extendedBio]) {
-        return 222;
-    }
-
-    return %orig;
 }
 %end
 %hook AWEPlayInteractionAuthorView
@@ -1963,82 +1790,7 @@ static BOOL isAuthenticationShowed = FALSE;
 // TTKProfileHeaderAdaptor / TTKProfileHeaderViewComponent family). The copy profile
 // information feature moved to the TTKProfileRootView hook near the top of this file.
 
-%hook AWELiveFeedEntranceView
-- (void)switchStateWithTapped:(BOOL)arg1 {
-    if (![BHIManager liveActionEnabled] || [BHIManager selectedLiveAction] == 0) {
-        %orig;
-    } else if ([BHIManager liveActionEnabled] && [[BHIManager selectedLiveAction] intValue] == 1) {
-        UIViewController *top = topMostController();
-        ViewController *vc = [[ViewController alloc] init];
-        UINavigationController *TweryTokSettings = [[UINavigationController alloc] initWithRootViewController:vc];
-        if (@available(iOS 13.0, *)) {
-            if (top.view.window.traitCollection.userInterfaceStyle) {
-                TweryTokSettings.overrideUserInterfaceStyle = top.view.window.traitCollection.userInterfaceStyle;
-            }
-        }
-        [top presentViewController:TweryTokSettings animated:true completion:nil];
-    } 
-    else {
-        %orig;
-    }
 
-}
-%end
-
-static NSURL *getDownloadURLForPhoto(AWEPhotoAlbumPhoto *photo) {
-    if (!photo) return nil;
-    AWEURLModel *urlModel = nil;
-    @try {
-        if ([photo respondsToSelector:@selector(originPhotoURL)]) {
-            urlModel = [photo originPhotoURL];
-        }
-        if (!urlModel && [photo respondsToSelector:@selector(watermarkPhotoURL)]) {
-            urlModel = [photo valueForKey:@"watermarkPhotoURL"];
-        }
-        if (!urlModel && [photo respondsToSelector:@selector(downloadPhotoURL)]) {
-            urlModel = [photo valueForKey:@"downloadPhotoURL"];
-        }
-        if (!urlModel && [photo respondsToSelector:@selector(displayPhotoURL)]) {
-            urlModel = [photo valueForKey:@"displayPhotoURL"];
-        }
-        if (!urlModel && [photo respondsToSelector:@selector(photoURL)]) {
-            urlModel = [photo valueForKey:@"photoURL"];
-        }
-    } @catch (__unused NSException *e) {}
-
-    if (urlModel) {
-        NSURL *u = [urlModel bestURLtoDownload];
-        if (u) return u;
-        if ([urlModel respondsToSelector:@selector(recommendUrl)] && [urlModel recommendUrl]) {
-            return [urlModel recommendUrl];
-        }
-        if (urlModel.originURLList.count > 0) {
-            return [NSURL URLWithString:urlModel.originURLList.firstObject];
-        }
-        if (urlModel.urlList.count > 0) {
-            return [NSURL URLWithString:urlModel.urlList.firstObject];
-        }
-    }
-    return nil;
-}
-
-static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
-    if (!photo) return @"jpeg";
-    AWEURLModel *urlModel = nil;
-    @try {
-        if ([photo respondsToSelector:@selector(originPhotoURL)]) {
-            urlModel = [photo originPhotoURL];
-        }
-    } @catch (__unused NSException *e) {}
-    if (urlModel) {
-        NSString *fmt = [urlModel bestURLtoDownloadFormat];
-        NSArray *imageExts = @[@"png", @"jpg", @"jpeg", @"gif", @"tiff", @"bmp", @"heif", @"heic", @"webp"];
-        if (fmt && [imageExts containsObject:[fmt lowercaseString]]) {
-            return fmt;
-        }
-    }
-    return @"jpeg";
-}
 
 %hook AWEFeedViewTemplateCell
 %property (nonatomic, strong) JGProgressHUD *hud;
@@ -2115,30 +1867,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
             }]];
         }
 
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Download Music" tr:@"Müziği İndir"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self downloadMusic:rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Video link" tr:@"Video Bağlantısını Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self copyVideo:rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Music link" tr:@"Müzik Bağlantısını Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self copyMusic:rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Decription" tr:@"Açıklamayı Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self copyDecription:rootVC];
-        }]];
-    } else if ([rootVC isKindOfClass:%c(TTKPhotoAlbumDetailCellController)] || [rootVC isKindOfClass:%c(TTKPhotoAlbumFeedCellController)]) {
-        NSArray *photos = rootVC.model.photoAlbum.photos;
-        unsigned long photosCount = [photos count];
-        for (int i = 0; i < photosCount; i++) {
-            NSString *title = [BHIManager isTurkish] ? [NSString stringWithFormat:@"%d. Fotoğrafı İndir", i+1] : [NSString stringWithFormat:@"Download Photo %d", i+1];
-            [alert addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                [(id)self downloadPhotos:(id)rootVC photoIndex:i];
-            }]];
-        }
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Download All Photos" tr:@"Tüm Fotoğrafları İndir"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [(id)self downloadPhotos:(id)rootVC];
-        }]];
         [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Download Music" tr:@"Müziği İndir"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [self downloadMusic:rootVC];
         }]];
@@ -2245,20 +1973,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         [menuActions addObject:cleanAction];
     }
 
-    if ([rootVC isKindOfClass:%c(TTKPhotoAlbumDetailCellController)] || [rootVC isKindOfClass:%c(TTKPhotoAlbumFeedCellController)]) {
-        NSArray *photos = rootVC.model.photoAlbum.photos;
-        unsigned long photosCount = [photos count];
-        for (int i = 0; i < photosCount; i++) {
-            NSString *title = tr ? [NSString stringWithFormat:@"%d. Fotoğrafı İndir", i+1] : [NSString stringWithFormat:@"Download Photo %d", i+1];
-            UIAction *pAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"photo"] identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
-                [(id)self downloadPhotos:(id)rootVC photoIndex:i];
-            }];
-            [menuActions addObject:pAction];
-        }
-        UIAction *allPhotosAction = [UIAction actionWithTitle:tr ? @"Tüm Fotoğrafları İndir" : @"Download All Photos" image:[UIImage systemImageNamed:@"photo.on.rectangle"] identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
-            [(id)self downloadPhotos:(id)rootVC];
-        }];
-        [menuActions addObject:allPhotosAction];
+    if (NO) {
     } else {
         UIAction *dlVideoAction = [UIAction actionWithTitle:tr ? @"Videoyu İndir" : @"Download Video" image:[UIImage systemImageNamed:@"film"] identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
             [self downloadVideo:rootVC];
@@ -2417,55 +2132,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         [self.hud showInView:topMostController().view];
     }
 }
-%new - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index {
-    NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
-    if (index >= photos.count) return;
-    AWEPhotoAlbumPhoto *currentPhoto = [photos objectAtIndex:index];
-
-    NSURL *downloadableURL = getDownloadURLForPhoto(currentPhoto);
-    self.fileextension = getDownloadFormatForPhoto(currentPhoto);
-    if (downloadableURL) {
-        BHDownload *dwManager = [[BHDownload alloc] init];
-        [dwManager downloadFileWithURL:downloadableURL];
-        [dwManager setDelegate:self];
-        self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-        self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-        [self.hud showInView:topMostController().view];
-    }
-}
-%new - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC {
-    NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
-    unsigned long photosCount = [photos count];
-    NSMutableArray *downloadableURLs = [NSMutableArray array];
-    for (int i = 0; i < photosCount; i++) {
-        AWEPhotoAlbumPhoto *currentPhoto = [photos objectAtIndex:i];
-        NSURL *url = getDownloadURLForPhoto(currentPhoto);
-        if (url) {
-            [downloadableURLs addObject:url];
-        }
-    }
-    self.fileextension = getDownloadFormatForPhoto(photos.firstObject);
-    if (downloadableURLs.count > 0) {
-        BHMultipleDownload *dwManager = [[BHMultipleDownload alloc] init];
-        [dwManager downloadFiles:downloadableURLs];
-        [dwManager setDelegate:self];
-        self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-        self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-        [self.hud showInView:topMostController().view];
-    }
-}
-%new - (void)downloadMusic:(AWEAwemeBaseViewController *)rootVC {
-    NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
-    self.fileextension = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownloadFormat];
-    if (downloadableURL) {
-        BHDownload *dwManager = [[BHDownload alloc] init];
-        [dwManager downloadFileWithURL:downloadableURL];
-        [dwManager setDelegate:self];
-        self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-        self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-        [self.hud showInView:topMostController().view];
-    }
-}
 %new - (void)copyMusic:(AWEAwemeBaseViewController *)rootVC {
     NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
     if (downloadableURL) {
@@ -2506,63 +2172,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         NSString *desc = [BHIManager localizedString:@"Could not copy description." tr:@"Açıklama kopyalanamadı."];
         NSString *ok = [BHIManager localizedString:@"OK" tr:@"Tamam"];
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
-    }
-}
-%new - (void)downloaderProgress:(float)progress {
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
-}
-%new - (void)downloaderDidFinishDownloadingAllFiles:(NSMutableArray<NSURL *> *)downloadedFilePaths {
-    [self.hud dismiss];
-    if ([BHIManager shareSheet]) {
-        [BHIManager showSaveVC:downloadedFilePaths];
-    }
-    else {
-        for (NSURL *url in downloadedFilePaths) {
-            NSData *d = [NSData dataWithContentsOfURL:url];
-            UIImage *img = d ? [UIImage imageWithData:d] : nil;
-            if (img) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil);
-                });
-            }
-        }
-        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
-            if (status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited) {
-                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                    for (NSURL *url in downloadedFilePaths) {
-                        NSData *data = [NSData dataWithContentsOfURL:url];
-                        UIImage *img = data ? [UIImage imageWithData:data] : nil;
-                        NSData *jpegData = img ? UIImageJPEGRepresentation(img, 1.0) : data;
-                        if (jpegData && jpegData.length > 0) {
-                            PHAssetCreationRequest *req = [PHAssetCreationRequest creationRequestForAsset];
-                            [req addResourceWithType:PHAssetResourceTypePhoto data:jpegData options:nil];
-                        } else {
-                            PHAssetResourceCreationOptions *options = [[PHAssetResourceCreationOptions alloc] init];
-                            [[PHAssetCreationRequest creationRequestForAsset] addResourceWithType:PHAssetResourceTypePhoto fileURL:url options:options];
-                        }
-                    }
-                } completionHandler:^(BOOL success, NSError * _Nullable error) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        Class toastCls = NSClassFromString(@"AWEToast");
-                        if ([toastCls respondsToSelector:@selector(showSuccess:)]) {
-                            [toastCls showSuccess:[BHIManager isTurkish] ? @"Tüm Fotoğraflar Kaydedildi" : @"All Photos Saved"];
-                        }
-                    });
-                }];
-            } else {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    Class toastCls = NSClassFromString(@"AWEToast");
-                    if ([toastCls respondsToSelector:@selector(showSuccess:)]) {
-                        [toastCls showSuccess:[BHIManager isTurkish] ? @"Tüm Fotoğraflar Kaydedildi" : @"All Photos Saved"];
-                    }
-                });
-            }
-        }];
-    }
-}
-%new - (void)downloaderDidFailureWithError:(NSError *)error {
-    if (error) {
-        [self.hud dismiss];
     }
 }
 %new - (void)downloadProgress:(float)progress {
@@ -2675,30 +2284,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Decription" tr:@"Açıklamayı Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [self copyDecription:rootVC];
         }]];
-    } else if ([rootVC isKindOfClass:%c(TTKPhotoAlbumDetailCellController)] || [rootVC isKindOfClass:%c(TTKPhotoAlbumFeedCellController)]) {
-        NSArray *photos = rootVC.model.photoAlbum.photos;
-        unsigned long photosCount = [photos count];
-        for (int i = 0; i < photosCount; i++) {
-            NSString *title = [BHIManager isTurkish] ? [NSString stringWithFormat:@"%d. Fotoğrafı İndir", i+1] : [NSString stringWithFormat:@"Download Photo %d", i+1];
-            [alert addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                [(id)self downloadPhotos:(id)rootVC photoIndex:i];
-            }]];
-        }
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Download All Photos" tr:@"Tüm Fotoğrafları İndir"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [(id)self downloadPhotos:(id)rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Download Music" tr:@"Müziği İndir"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self downloadMusic:rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Video link" tr:@"Video Bağlantısını Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self copyVideo:rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Music link" tr:@"Müzik Bağlantısını Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self copyMusic:rootVC];
-        }]];
-        [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Copy Decription" tr:@"Açıklamayı Kopyala"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            [self copyDecription:rootVC];
-        }]];
     } else {
         [alert addAction:[UIAlertAction actionWithTitle:[BHIManager localizedString:@"Download Video" tr:@"Videoyu İndir"] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [self downloadVideo:rootVC];
@@ -2793,20 +2378,7 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         [menuActions addObject:cleanAction];
     }
 
-    if ([rootVC isKindOfClass:%c(TTKPhotoAlbumDetailCellController)] || [rootVC isKindOfClass:%c(TTKPhotoAlbumFeedCellController)]) {
-        NSArray *photos = rootVC.model.photoAlbum.photos;
-        unsigned long photosCount = [photos count];
-        for (int i = 0; i < photosCount; i++) {
-            NSString *title = tr ? [NSString stringWithFormat:@"%d. Fotoğrafı İndir", i+1] : [NSString stringWithFormat:@"Download Photo %d", i+1];
-            UIAction *pAction = [UIAction actionWithTitle:title image:[UIImage systemImageNamed:@"photo"] identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
-                [(id)self downloadPhotos:(id)rootVC photoIndex:i];
-            }];
-            [menuActions addObject:pAction];
-        }
-        UIAction *allPhotosAction = [UIAction actionWithTitle:tr ? @"Tüm Fotoğrafları İndir" : @"Download All Photos" image:[UIImage systemImageNamed:@"photo.on.rectangle"] identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
-            [(id)self downloadPhotos:(id)rootVC];
-        }];
-        [menuActions addObject:allPhotosAction];
+    if (NO) {
     } else {
         UIAction *dlVideoAction = [UIAction actionWithTitle:tr ? @"Videoyu İndir" : @"Download Video" image:[UIImage systemImageNamed:@"film"] identifier:nil handler:^(__kindof UIAction * _Nonnull action) {
             [self downloadVideo:rootVC];
@@ -2965,55 +2537,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         [self.hud showInView:topMostController().view];
     }
 }
-%new - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index {
-    NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
-    if (index >= photos.count) return;
-    AWEPhotoAlbumPhoto *currentPhoto = [photos objectAtIndex:index];
-
-    NSURL *downloadableURL = getDownloadURLForPhoto(currentPhoto);
-    self.fileextension = getDownloadFormatForPhoto(currentPhoto);
-    if (downloadableURL) {
-        BHDownload *dwManager = [[BHDownload alloc] init];
-        [dwManager downloadFileWithURL:downloadableURL];
-        [dwManager setDelegate:self];
-        self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-        self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-        [self.hud showInView:topMostController().view];
-    }
-}
-%new - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC {
-    NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
-    unsigned long photosCount = [photos count];
-    NSMutableArray *downloadableURLs = [NSMutableArray array];
-    for (int i = 0; i < photosCount; i++) {
-        AWEPhotoAlbumPhoto *currentPhoto = [photos objectAtIndex:i];
-        NSURL *url = getDownloadURLForPhoto(currentPhoto);
-        if (url) {
-            [downloadableURLs addObject:url];
-        }
-    }
-    self.fileextension = getDownloadFormatForPhoto(photos.firstObject);
-    if (downloadableURLs.count > 0) {
-        BHMultipleDownload *dwManager = [[BHMultipleDownload alloc] init];
-        [dwManager downloadFiles:downloadableURLs];
-        [dwManager setDelegate:self];
-        self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-        self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-        [self.hud showInView:topMostController().view];
-    }
-}
-%new - (void)downloadMusic:(AWEAwemeBaseViewController *)rootVC {
-    NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
-    self.fileextension = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownloadFormat];
-    if (downloadableURL) {
-        BHDownload *dwManager = [[BHDownload alloc] init];
-        [dwManager downloadFileWithURL:downloadableURL];
-        [dwManager setDelegate:self];
-        self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-        self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-        [self.hud showInView:topMostController().view];
-    }
-}
 %new - (void)copyMusic:(AWEAwemeBaseViewController *)rootVC {
     NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
     if (downloadableURL) {
@@ -3056,63 +2579,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
         [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
-%new - (void)downloaderProgress:(float)progress {
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
-}
-%new - (void)downloaderDidFinishDownloadingAllFiles:(NSMutableArray<NSURL *> *)downloadedFilePaths {
-    [self.hud dismiss];
-    if ([BHIManager shareSheet]) {
-        [BHIManager showSaveVC:downloadedFilePaths];
-    }
-    else {
-        for (NSURL *url in downloadedFilePaths) {
-            NSData *d = [NSData dataWithContentsOfURL:url];
-            UIImage *img = d ? [UIImage imageWithData:d] : nil;
-            if (img) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil);
-                });
-            }
-        }
-        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
-            if (status == PHAuthorizationStatusAuthorized || status == PHAuthorizationStatusLimited) {
-                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                    for (NSURL *url in downloadedFilePaths) {
-                        NSData *data = [NSData dataWithContentsOfURL:url];
-                        UIImage *img = data ? [UIImage imageWithData:data] : nil;
-                        NSData *jpegData = img ? UIImageJPEGRepresentation(img, 1.0) : data;
-                        if (jpegData && jpegData.length > 0) {
-                            PHAssetCreationRequest *req = [PHAssetCreationRequest creationRequestForAsset];
-                            [req addResourceWithType:PHAssetResourceTypePhoto data:jpegData options:nil];
-                        } else {
-                            PHAssetResourceCreationOptions *options = [[PHAssetResourceCreationOptions alloc] init];
-                            [[PHAssetCreationRequest creationRequestForAsset] addResourceWithType:PHAssetResourceTypePhoto fileURL:url options:options];
-                        }
-                    }
-                } completionHandler:^(BOOL success, NSError * _Nullable error) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        Class toastCls = NSClassFromString(@"AWEToast");
-                        if ([toastCls respondsToSelector:@selector(showSuccess:)]) {
-                            [toastCls showSuccess:[BHIManager isTurkish] ? @"Tüm Fotoğraflar Kaydedildi" : @"All Photos Saved"];
-                        }
-                    });
-                }];
-            } else {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    Class toastCls = NSClassFromString(@"AWEToast");
-                    if ([toastCls respondsToSelector:@selector(showSuccess:)]) {
-                        [toastCls showSuccess:[BHIManager isTurkish] ? @"Tüm Fotoğraflar Kaydedildi" : @"All Photos Saved"];
-                    }
-                });
-            }
-        }];
-    }
-}
-%new - (void)downloaderDidFailureWithError:(NSError *)error {
-    if (error) {
-        [self.hud dismiss];
-    }
-}
 %new - (void)downloadProgress:(float)progress {
     self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
     self.hud.tapOutsideBlock = ^(JGProgressHUD * _Nonnull HUD) {
@@ -3134,654 +2600,6 @@ static NSString *getDownloadFormatForPhoto(AWEPhotoAlbumPhoto *photo) {
     if (error) {
         [self.hud dismiss];
     }
-}
-%end
-
-@interface BHTStoryDownloader : NSObject <BHDownloadDelegate, BHMultipleDownloadDelegate>
-@property (nonatomic, strong) JGProgressHUD *hud;
-@property (nonatomic, strong) NSString *fileextension;
-+ (instancetype)shared;
-- (void)downloadStoryModel:(AWEAwemeModel *)rawModel;
-@end
-
-@implementation BHTStoryDownloader
-+ (instancetype)shared {
-    static BHTStoryDownloader *instance = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        instance = [[BHTStoryDownloader alloc] init];
-    });
-    return instance;
-}
-
-- (void)downloadStoryModel:(AWEAwemeModel *)rawModel {
-    if (!rawModel && sCurrentActiveStoryCell) {
-        rawModel = [sCurrentActiveStoryCell bht_storyModel];
-    }
-    if (!rawModel) {
-        NSString *title = [BHIManager isTurkish] ? @"TweryTok, Selam" : @"TweryTok, Hi";
-        NSString *desc = [BHIManager isTurkish] ? @"Hikaye medyası bulunamadı." : @"Could not find story media.";
-        NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
-        [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
-        return;
-    }
-
-    AWEAwemeModel *model = rawModel.currentPlayingStory ?: rawModel;
-
-    // Check multiple photos first
-    if (model.photoAlbum.photos.count > 1) {
-        NSMutableArray *urls = [NSMutableArray array];
-        for (AWEPhotoAlbumPhoto *p in model.photoAlbum.photos) {
-            NSURL *u = getDownloadURLForPhoto(p);
-            if (u) [urls addObject:u];
-        }
-        if (urls.count > 0) {
-            self.fileextension = getDownloadFormatForPhoto(model.photoAlbum.photos.firstObject);
-            BHMultipleDownload *dwManager = [[BHMultipleDownload alloc] init];
-            [dwManager downloadFiles:urls];
-            [dwManager setDelegate:self];
-            self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-            self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-            [self.hud showInView:topMostController().view];
-            return;
-        }
-    }
-
-    NSURL *downloadURL = nil;
-    NSString *format = nil;
-
-    // 1. Single photo in photo album
-    if (model.photoAlbum.photos.count > 0) {
-        AWEPhotoAlbumPhoto *firstPhoto = model.photoAlbum.photos.firstObject;
-        downloadURL = getDownloadURLForPhoto(firstPhoto);
-        format = getDownloadFormatForPhoto(firstPhoto);
-    }
-
-    // 2. Video story
-    if (!downloadURL && model.video.playURL) {
-        downloadURL = [model.video.playURL bestURLtoDownload];
-        if (!downloadURL && model.video.playURL.originURLList.count > 0) {
-            downloadURL = [NSURL URLWithString:model.video.playURL.originURLList.firstObject];
-        }
-        format = [model.video.playURL bestURLtoDownloadFormat] ?: @"mp4";
-    }
-
-    // 3. Fallback originCover for photo story
-    if (!downloadURL && model.video.originCover) {
-        downloadURL = [model.video.originCover bestURLtoDownload];
-        if (!downloadURL && model.video.originCover.originURLList.count > 0) {
-            downloadURL = [NSURL URLWithString:model.video.originCover.originURLList.firstObject];
-        }
-        format = [model.video.originCover bestURLtoDownloadFormat] ?: @"jpeg";
-    }
-
-    if (!downloadURL) {
-        NSString *title = [BHIManager isTurkish] ? @"TweryTok, Selam" : @"TweryTok, Hi";
-        NSString *desc = [BHIManager isTurkish] ? @"Hikaye indirme bağlantısı alınamadı." : @"Could not obtain story download URL.";
-        NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
-        [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
-        return;
-    }
-
-    self.fileextension = format;
-    BHDownload *dwManager = [[BHDownload alloc] init];
-    [dwManager downloadFileWithURL:downloadURL];
-    [dwManager setDelegate:self];
-
-    self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
-    self.hud.textLabel.text = [BHIManager localizedString:@"Downloading" tr:@"İndiriliyor"];
-    [self.hud showInView:topMostController().view];
-}
-
-- (void)downloadProgress:(float)progress {
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
-    __weak typeof(self) weakSelf = self;
-    self.hud.tapOutsideBlock = ^(JGProgressHUD * _Nonnull HUD) {
-        weakSelf.hud.textLabel.text = [BHIManager localizedString:@"Backgrounding ✌️" tr:@"Arka plana alındı ✌️"];
-        [weakSelf.hud dismissAfterDelay:0.4];
-    };
-}
-
-- (void)downloadDidFinish:(NSURL *)filePath Filename:(NSString *)fileName {
-    NSString *docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSFileManager *manager = [NSFileManager defaultManager];
-    NSURL *newFilePath = [[NSURL fileURLWithPath:docPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@", [NSUUID UUID].UUIDString, self.fileextension]];
-    [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
-    [self.hud dismiss];
-
-    NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
-    if ([BHIManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
-        [BHIManager showSaveVC:@[newFilePath]];
-    } else {
-        [BHIManager saveMedia:newFilePath fileExtension:self.fileextension];
-        [%c(AWEToast) showSuccess:[BHIManager isTurkish] ? @"Hikaye Kaydedildi" : @"Story Saved"];
-    }
-}
-
-- (void)downloadDidFailureWithError:(NSError *)error {
-    if (error) {
-        [self.hud dismiss];
-        NSString *title = [BHIManager isTurkish] ? @"Hata" : @"Error";
-        NSString *desc = [BHIManager isTurkish] ? @"Hikaye indirilemedi." : @"Failed to download story.";
-        NSString *ok = [BHIManager isTurkish] ? @"Tamam" : @"OK";
-        [%c(AWEUIAlertView) showAlertWithTitle:title description:desc image:nil actionButtonTitle:ok cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
-    }
-}
-
-- (void)downloaderProgress:(float)progress {
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
-}
-
-- (void)downloaderDidFinishDownloadingAllFiles:(NSMutableArray<NSURL *> *)downloadedFilePaths {
-    NSString *docPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-    NSFileManager *manager = [NSFileManager defaultManager];
-    for (NSURL *filePath in downloadedFilePaths) {
-        NSURL *newFilePath = [[NSURL fileURLWithPath:docPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@", [NSUUID UUID].UUIDString, self.fileextension]];
-        [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
-        [BHIManager saveMedia:newFilePath fileExtension:self.fileextension];
-    }
-    [self.hud dismiss];
-    [%c(AWEToast) showSuccess:[BHIManager isTurkish] ? @"Hikaye Fotoğrafları Kaydedildi" : @"Story Photos Saved"];
-}
-
-- (void)downloaderDidFailureWithError:(NSError *)error {
-    if (error) {
-        [self.hud dismiss];
-    }
-}
-@end
-
-static AWEShareItem *createStoryDownloadItem(id templateItem, AWEAwemeModel *aweme) {
-    AWEShareItem *dlItem = nil;
-    Class dlChannelClass = %c(AWEDownloadShareChannel);
-    if (dlChannelClass) {
-        @try {
-            AWEDownloadShareChannel *channel = [[dlChannelClass alloc] init];
-            NSUInteger st = 1;
-            if (templateItem && [templateItem respondsToSelector:NSSelectorFromString(@"style")]) {
-                @try {
-                    st = [[templateItem valueForKey:@"style"] unsignedIntegerValue];
-                } @catch (__unused NSException *e) {}
-            }
-            dlItem = [channel makeItemWithStyle:st inView:nil];
-        } @catch (__unused NSException *e) {}
-    }
-    if (!dlItem) {
-        Class itemClass = %c(AWEShareItem);
-        if (itemClass) {
-            @try {
-                dlItem = [[itemClass alloc] initWithType:@"bht_story_download"];
-            } @catch (__unused NSException *e) {}
-        }
-    }
-    if (!dlItem) return nil;
-
-    [dlItem setTitle:[BHIManager isTurkish] ? @"İndir" : @"Download"];
-    UIImage *img = [UIImage systemImageNamed:@"arrow.down.to.line.compact"] ?: [UIImage systemImageNamed:@"arrow.down"];
-    if (img) {
-        [dlItem setImage:img];
-    }
-    if (templateItem) {
-        @try {
-            if ([templateItem respondsToSelector:NSSelectorFromString(@"shareCategory")]) {
-                [dlItem setShareCategory:[[templateItem valueForKey:@"shareCategory"] unsignedIntegerValue]];
-            }
-            if ([templateItem respondsToSelector:NSSelectorFromString(@"style")]) {
-                [dlItem setStyle:[[templateItem valueForKey:@"style"] unsignedIntegerValue]];
-            }
-            if ([templateItem respondsToSelector:NSSelectorFromString(@"iconColorName")]) {
-                [dlItem setIconColorName:[templateItem valueForKey:@"iconColorName"]];
-            }
-            if ([templateItem respondsToSelector:NSSelectorFromString(@"titleColorName")]) {
-                [dlItem setTitleColorName:[templateItem valueForKey:@"titleColorName"]];
-            }
-            if ([templateItem respondsToSelector:NSSelectorFromString(@"iconBackgroundColorName")]) {
-                [dlItem setIconBackgroundColorName:[templateItem valueForKey:@"iconBackgroundColorName"]];
-            }
-        } @catch (__unused NSException *e) {}
-    }
-    [dlItem setEnabled:YES];
-
-    __weak AWEAwemeModel *weakAweme = aweme;
-    [dlItem registerHandler:^(id item) {
-        UIViewController *top = topMostController();
-        [top dismissViewControllerAnimated:YES completion:^{
-            AWEAwemeModel *m = weakAweme ?: sCurrentShareAweme;
-            [[BHTStoryDownloader shared] downloadStoryModel:m];
-        }];
-    } forEvents:1];
-
-    return dlItem;
-}
-
-
-
-@implementation BHTStoryProgressBar
-- (instancetype)initWithFrame:(CGRect)frame {
-    self = [super initWithFrame:frame];
-    if (self) {
-        self.backgroundColor = [UIColor clearColor];
-        self.userInteractionEnabled = YES;
-
-        _trackBgView = [[UIView alloc] init];
-        _trackBgView.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.35];
-        _trackBgView.layer.cornerRadius = 2.0;
-        _trackBgView.layer.masksToBounds = YES;
-        _trackBgView.userInteractionEnabled = NO;
-        [self addSubview:_trackBgView];
-
-        _trackFillView = [[UIView alloc] init];
-        _trackFillView.backgroundColor = [UIColor whiteColor];
-        _trackFillView.layer.cornerRadius = 2.0;
-        _trackFillView.layer.masksToBounds = YES;
-        _trackFillView.userInteractionEnabled = NO;
-        [self addSubview:_trackFillView];
-
-        _thumbView = [[UIView alloc] init];
-        _thumbView.backgroundColor = [UIColor whiteColor];
-        _thumbView.layer.cornerRadius = 6.0;
-        _thumbView.layer.shadowColor = [UIColor blackColor].CGColor;
-        _thumbView.layer.shadowOpacity = 0.5;
-        _thumbView.layer.shadowRadius = 2.0;
-        _thumbView.layer.shadowOffset = CGSizeMake(0, 1);
-        _thumbView.userInteractionEnabled = NO;
-        [self addSubview:_thumbView];
-
-        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
-        [self addGestureRecognizer:pan];
-
-        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
-        [self addGestureRecognizer:tap];
-    }
-    return self;
-}
-
-- (void)layoutSubviews {
-    [super layoutSubviews];
-    CGFloat w = self.bounds.size.width;
-    CGFloat h = self.bounds.size.height;
-    CGFloat trackH = 4.0;
-    CGFloat trackY = (h - trackH) / 2.0;
-
-    _trackBgView.frame = CGRectMake(0, trackY, w, trackH);
-    CGFloat fillW = w * _progress;
-    if (fillW < 0) fillW = 0;
-    if (fillW > w) fillW = w;
-    _trackFillView.frame = CGRectMake(0, trackY, fillW, trackH);
-
-    CGFloat thumbD = _isDragging ? 16.0 : 12.0;
-    _thumbView.layer.cornerRadius = thumbD / 2.0;
-    CGFloat thumbX = fillW - (thumbD / 2.0);
-    if (thumbX < 0) thumbX = 0;
-    if (thumbX > w - thumbD) thumbX = w - thumbD;
-    CGFloat thumbY = (h - thumbD) / 2.0;
-    _thumbView.frame = CGRectMake(thumbX, thumbY, thumbD, thumbD);
-}
-
-- (void)updateProgress:(CGFloat)p {
-    if (p < 0.0) p = 0.0;
-    if (p > 1.0) p = 1.0;
-    _progress = p;
-    [self setNeedsLayout];
-}
-
-- (void)seekToPercent:(CGFloat)percent {
-    if (sCurrentActivePlayerController && [sCurrentActivePlayerController respondsToSelector:@selector(totalDuration)]) {
-        double total = [sCurrentActivePlayerController totalDuration];
-        if (total > 0) {
-            double targetTime = total * percent;
-            if ([sCurrentActivePlayerController respondsToSelector:@selector(seekToTime:completion:)]) {
-                [sCurrentActivePlayerController seekToTime:targetTime completion:nil];
-                return;
-            } else if ([sCurrentActivePlayerController respondsToSelector:@selector(setPlayerSeekTime:completion:)]) {
-                [sCurrentActivePlayerController setPlayerSeekTime:targetTime completion:nil];
-                return;
-            }
-        }
-    }
-    if (sCurrentActivePlayerController && [sCurrentActivePlayerController respondsToSelector:@selector(seekToPercent:completeBlock:)]) {
-        [sCurrentActivePlayerController seekToPercent:percent completeBlock:nil];
-        return;
-    }
-    if (sCurrentActiveVideoEngine && [sCurrentActiveVideoEngine respondsToSelector:@selector(duration)]) {
-        double dur = [sCurrentActiveVideoEngine duration];
-        if (dur > 0) {
-            double targetTime = dur * percent;
-            if ([sCurrentActiveVideoEngine respondsToSelector:@selector(setCurrentPlaybackTime:complete:)]) {
-                [sCurrentActiveVideoEngine setCurrentPlaybackTime:targetTime complete:nil];
-            } else if ([sCurrentActiveVideoEngine respondsToSelector:@selector(setCurrentPlaybackTime:)]) {
-                [sCurrentActiveVideoEngine setCurrentPlaybackTime:targetTime];
-            }
-        }
-    }
-}
-
-- (void)handleTap:(UITapGestureRecognizer *)sender {
-    CGPoint pt = [sender locationInView:self];
-    CGFloat w = self.bounds.size.width;
-    if (w <= 0) return;
-    CGFloat p = pt.x / w;
-    [self updateProgress:p];
-    [self seekToPercent:p];
-}
-
-- (void)handlePan:(UIPanGestureRecognizer *)sender {
-    CGPoint pt = [sender locationInView:self];
-    CGFloat w = self.bounds.size.width;
-    if (w <= 0) return;
-    CGFloat p = pt.x / w;
-    if (p < 0.0) p = 0.0;
-    if (p > 1.0) p = 1.0;
-
-    if (sender.state == UIGestureRecognizerStateBegan) {
-        _isDragging = YES;
-        [self updateProgress:p];
-    } else if (sender.state == UIGestureRecognizerStateChanged) {
-        [self updateProgress:p];
-        [self seekToPercent:p];
-    } else if (sender.state == UIGestureRecognizerStateEnded || sender.state == UIGestureRecognizerStateCancelled) {
-        _isDragging = NO;
-        [self updateProgress:p];
-        [self seekToPercent:p];
-    }
-}
-
-- (void)startTimer {
-    [self stopTimer];
-    __weak typeof(self) weakSelf = self;
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
-        [weakSelf tick];
-    }];
-}
-
-- (void)stopTimer {
-    if (self.timer) {
-        [self.timer invalidate];
-        self.timer = nil;
-    }
-}
-
-- (void)tick {
-    if (_isDragging) return;
-    if (!self.window || self.hidden || self.alpha <= 0.01) return;
-
-    double curr = 0;
-    double total = 0;
-    if (sCurrentActivePlayerController && [sCurrentActivePlayerController respondsToSelector:@selector(currentPlaybackTime)]) {
-        curr = [sCurrentActivePlayerController currentPlaybackTime];
-    } else if (sCurrentActiveVideoEngine && [sCurrentActiveVideoEngine respondsToSelector:@selector(currentPlaybackTime)]) {
-        curr = [sCurrentActiveVideoEngine currentPlaybackTime];
-    }
-
-    if (sCurrentActivePlayerController && [sCurrentActivePlayerController respondsToSelector:@selector(totalDuration)]) {
-        total = [sCurrentActivePlayerController totalDuration];
-    } else if (sCurrentActiveVideoEngine && [sCurrentActiveVideoEngine respondsToSelector:@selector(duration)]) {
-        total = [sCurrentActiveVideoEngine duration];
-    }
-
-    if (total > 0.1) {
-        [self updateProgress:(CGFloat)(curr / total)];
-    }
-}
-
-- (void)dealloc {
-    [self stopTimer];
-}
-@end
-
-static void bht_layoutProgressBarInView(UIView *parentView) {
-    if (!parentView) return;
-
-    // Ensure only ONE progress bar ever exists across the window
-    UIWindow *win = parentView.window ?: [UIApplication sharedApplication].keyWindow;
-    if (win) {
-        NSMutableArray *queue = [NSMutableArray arrayWithObject:win];
-        while (queue.count > 0) {
-            UIView *cur = queue.firstObject;
-            [queue removeObjectAtIndex:0];
-            if (cur.tag == 99871 && cur.superview != parentView) {
-                [(BHTStoryProgressBar *)cur stopTimer];
-                [cur removeFromSuperview];
-            }
-            for (UIView *sub in cur.subviews) {
-                [queue addObject:sub];
-            }
-        }
-    }
-
-    BHTStoryProgressBar *bar = (BHTStoryProgressBar *)[parentView viewWithTag:99871];
-    if (![BHIManager progressBar]) {
-        if (bar) {
-            [bar stopTimer];
-            [bar removeFromSuperview];
-        }
-        return;
-    }
-    if (!bar) {
-        bar = [[BHTStoryProgressBar alloc] initWithFrame:CGRectZero];
-        bar.tag = 99871;
-        [parentView addSubview:bar];
-    }
-    CGFloat screenW = parentView.bounds.size.width;
-    CGFloat screenH = parentView.bounds.size.height;
-    if (screenW <= 0 || screenH <= 0) return;
-
-    CGFloat margin = 16.0;
-    CGFloat barH = 26.0;
-    CGFloat bottomOffset = 90.0;
-    if (@available(iOS 11.0, *)) {
-        if (parentView.safeAreaInsets.bottom > 0) {
-            bottomOffset = parentView.safeAreaInsets.bottom + 58.0;
-        }
-    }
-    CGFloat barY = screenH - bottomOffset - barH;
-    bar.frame = CGRectMake(margin, barY, screenW - (margin * 2.0), barH);
-    [parentView bringSubviewToFront:bar];
-    [bar startTimer];
-}
-
-%hook TTKStory2FeedViewController
-- (void)viewDidAppear:(BOOL)animated {
-    %orig;
-    bht_layoutProgressBarInView(self.view);
-}
-- (void)viewDidLayoutSubviews {
-    %orig;
-    bht_layoutProgressBarInView(self.view);
-}
-- (void)viewWillDisappear:(BOOL)animated {
-    %orig;
-    BHTStoryProgressBar *bar = [self.view viewWithTag:99871];
-    if (bar) [bar stopTimer];
-}
-%new - (void)bht_layoutStoryProgressBar {
-    bht_layoutProgressBarInView(self.view);
-}
-%end
-
-%hook TTKShareConfiguration
-- (id)initWithShareContext:(id)context {
-    id res = %orig;
-    @try {
-        if ([context respondsToSelector:NSSelectorFromString(@"aweme")]) {
-            sCurrentShareAweme = [context valueForKey:@"aweme"];
-        } else if ([context respondsToSelector:@selector(model)]) {
-            sCurrentShareAweme = (id)[context model];
-        }
-    } @catch (__unused NSException *e) {}
-    return res;
-}
-%end
-
-%hook AWEAwemeModel
-- (BOOL)preventDownload {
-    if ([BHIManager downloadStory] && self.isStory) {
-        return NO;
-    }
-    return %orig;
-}
-- (BOOL)allowDownload {
-    if ([BHIManager downloadStory] && self.isStory) {
-        return YES;
-    }
-    return %orig;
-}
-- (BOOL)allowDownloadPhoto {
-    if ([BHIManager downloadStory] && self.isStory) {
-        return YES;
-    }
-    return %orig;
-}
-- (BOOL)allowDownloadWithoutWatermark {
-    if ([BHIManager downloadStory] && self.isStory) {
-        return YES;
-    }
-    return %orig;
-}
-%end
-
-%hook AWEDownloadShareChannel
-- (BOOL)prepareWithContext:(id)context {
-    if ([BHIManager downloadStory]) {
-        return YES;
-    }
-    return %orig;
-}
-- (BOOL)isShareItemEnabled {
-    if ([BHIManager downloadStory]) {
-        return YES;
-    }
-    return %orig;
-}
-- (void)shareWithCompletion:(id)completion {
-    if ([BHIManager downloadStory]) {
-        AWEAwemeModel *m = sCurrentShareAweme;
-        if (!m && [self.context respondsToSelector:NSSelectorFromString(@"aweme")]) {
-            m = [self.context valueForKey:@"aweme"];
-        }
-        if (m && (m.isStory || sCurrentActiveStoryCell)) {
-            UIViewController *top = topMostController();
-            [top dismissViewControllerAnimated:YES completion:^{
-                [[BHTStoryDownloader shared] downloadStoryModel:m];
-            }];
-            if (completion) {
-                ((void (^)(BOOL, NSError *))completion)(YES, nil);
-            }
-            return;
-        }
-    }
-    %orig;
-}
-%end
-
-%hook TTKNSharePanelViewModel
-- (NSArray *)groupedActionItems {
-    NSArray *orig = %orig;
-    if (![BHIManager downloadStory]) return orig;
-    if (!orig || orig.count == 0) return orig;
-
-    BOOL isStory = NO;
-    AWEAwemeModel *storyModel = sCurrentShareAweme;
-    if (storyModel && storyModel.isStory) isStory = YES;
-    if (!isStory && sCurrentActiveStoryCell) {
-        isStory = YES;
-        if (!storyModel) storyModel = [sCurrentActiveStoryCell bht_storyModel];
-    }
-    UIViewController *top = topMostController();
-    if (!isStory && ([top isKindOfClass:%c(TTKStory2FeedViewController)] || [top.presentingViewController isKindOfClass:%c(TTKStory2FeedViewController)])) {
-        isStory = YES;
-    }
-    if (!isStory) return orig;
-
-    id firstSec = orig.firstObject;
-    if ([firstSec isKindOfClass:[NSArray class]]) {
-        NSArray *firstSection = (NSArray *)firstSec;
-        if (firstSection.count > 0) {
-            for (id it in firstSection) {
-                if ([it respondsToSelector:@selector(title)] && ([[it title] isEqualToString:@"İndir"] || [[it title] isEqualToString:@"Download"])) {
-                    return orig;
-                }
-            }
-            id templateItem = firstSection.firstObject;
-            AWEShareItem *dlItem = createStoryDownloadItem(templateItem, storyModel);
-            if (dlItem) {
-                NSMutableArray *newFirstSection = [NSMutableArray arrayWithObject:dlItem];
-                [newFirstSection addObjectsFromArray:firstSection];
-                NSMutableArray *newGroups = [orig mutableCopy];
-                newGroups[0] = newFirstSection;
-                return newGroups;
-            }
-        }
-    }
-    return orig;
-}
-
-- (NSArray *)actionRowItems {
-    NSArray *orig = %orig;
-    if (![BHIManager downloadStory]) return orig;
-    if (!orig || orig.count == 0) return orig;
-
-    BOOL isStory = NO;
-    AWEAwemeModel *storyModel = sCurrentShareAweme;
-    if (storyModel && storyModel.isStory) isStory = YES;
-    if (!isStory && sCurrentActiveStoryCell) {
-        isStory = YES;
-        if (!storyModel) storyModel = [sCurrentActiveStoryCell bht_storyModel];
-    }
-    UIViewController *top = topMostController();
-    if (!isStory && ([top isKindOfClass:%c(TTKStory2FeedViewController)] || [top.presentingViewController isKindOfClass:%c(TTKStory2FeedViewController)])) {
-        isStory = YES;
-    }
-    if (!isStory) return orig;
-
-    for (id it in orig) {
-        if ([it respondsToSelector:@selector(title)] && ([[it title] isEqualToString:@"İndir"] || [[it title] isEqualToString:@"Download"])) {
-            return orig;
-        }
-    }
-
-    id templateItem = orig.firstObject;
-    AWEShareItem *dlItem = createStoryDownloadItem(templateItem, storyModel);
-    if (dlItem) {
-        NSMutableArray *newItems = [NSMutableArray arrayWithObject:dlItem];
-        [newItems addObjectsFromArray:orig];
-        return newItems;
-    }
-    return orig;
-}
-
-- (NSArray *)secondRowItems {
-    NSArray *orig = %orig;
-    if (![BHIManager downloadStory]) return orig;
-    if (!orig || orig.count == 0) return orig;
-
-    BOOL isStory = NO;
-    AWEAwemeModel *storyModel = sCurrentShareAweme;
-    if (storyModel && storyModel.isStory) isStory = YES;
-    if (!isStory && sCurrentActiveStoryCell) {
-        isStory = YES;
-        if (!storyModel) storyModel = [sCurrentActiveStoryCell bht_storyModel];
-    }
-    UIViewController *top = topMostController();
-    if (!isStory && ([top isKindOfClass:%c(TTKStory2FeedViewController)] || [top.presentingViewController isKindOfClass:%c(TTKStory2FeedViewController)])) {
-        isStory = YES;
-    }
-    if (!isStory) return orig;
-
-    for (id it in orig) {
-        if ([it respondsToSelector:@selector(title)] && ([[it title] isEqualToString:@"İndir"] || [[it title] isEqualToString:@"Download"])) {
-            return orig;
-        }
-    }
-
-    id templateItem = orig.firstObject;
-    AWEShareItem *dlItem = createStoryDownloadItem(templateItem, storyModel);
-    if (dlItem) {
-        NSMutableArray *newItems = [NSMutableArray arrayWithObject:dlItem];
-        [newItems addObjectsFromArray:orig];
-        return newItems;
-    }
-    return orig;
 }
 %end
 
@@ -3965,71 +2783,61 @@ static void bht_layoutProgressBarInView(UIView *parentView) {
 // 0/absent = stock behavior). AWEOfflineVideoConfigUtils is the single config authority for the
 // offline-videos feature: shouldDownloadCount feeds the download flow, getFinalCountWithCount:
 // clamps a requested count to the stock tier cap, isAtMaxDownloadCount stops refills at the cap.
-%hook AWEOfflineVideoConfigUtils
-+ (NSInteger)shouldDownloadCount {
-    NSNumber *custom = [BHIManager offlineVideosLimit];
-    if (custom != nil && [custom integerValue] > 0) {
-        return [custom integerValue];
-    }
-    return %orig;
-}
-+ (NSInteger)defaultShouldDownloadCount {
-    NSNumber *custom = [BHIManager offlineVideosLimit];
-    if (custom != nil && [custom integerValue] > 0) {
-        return [custom integerValue];
-    }
-    return %orig;
-}
-+ (int)getFinalCountWithCount:(int)count {
-    // only ever raise the stock clamp, never shrink it or alter sentinel values
-    int stock = %orig;
-    NSNumber *custom = [BHIManager offlineVideosLimit];
-    if (custom != nil && [custom integerValue] > 0 && count > stock) {
-        return count;
-    }
-    return stock;
-}
-+ (BOOL)isAtMaxDownloadCount {
-    NSNumber *custom = [BHIManager offlineVideosLimit];
-    if (custom != nil && [custom integerValue] > 0) {
-        return NO; // don't stop refilling at the stock cap
-    }
-    return %orig;
-}
-%end
 
 // Labs: A/B experiment overrides (Settings -> Labs -> A/B Experiment Explorer; key: ab_overrides).
 // These are the Libra/ClientAB read accessors verified in MusicallyCore 46.5.0 ObjC metadata.
 // The Labs editor preserves original value types, so returning the boxed override is type-safe.
 // NOTE: do NOT hook ABTestMonitor*/exposure paths (tracking) — overrides stay local-only.
-%hook AWEABTestManager
-- (id)getStableValueWithKey:(id)key {
-    id override = [BHIManager abOverrides][key];
-    if (override) {
-        return override;
+
+
+
+
+// ============================================================================
+// ФИЧА 2: смена цвета лайков (TWLikeColorManager)
+// ============================================================================
+
+%hook UIImage
++ (UIImage *)imageNamed:(NSString *)name {
+    UIImage *orig = %orig;
+    // Перекрашиваем ТОЛЬКО лайк-ассеты из белого списка (см. isLikeAssetName:)
+    if (name && [TWLikeColorManager isLikeAssetName:name]) {
+        UIImage *tinted = [TWLikeColorManager tintedImageForName:name];
+        if (tinted) {
+            return tinted;
+        }
     }
-    return %orig;
+    return orig;
 }
-- (id)getUidABTestValue:(id)key stable:(BOOL)stable defaultValue:(id)defaultValue {
-    id override = [BHIManager abOverrides][key];
-    if (override) {
-        return override;
++ (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle compatibleWithTraitCollection:(id)trait {
+    UIImage *orig = %orig;
+    if (name && [TWLikeColorManager isLikeAssetName:name]) {
+        UIImage *tinted = [TWLikeColorManager tintedImageForName:name];
+        if (tinted) {
+            return tinted;
+        }
     }
-    return %orig;
+    return orig;
 }
 %end
 
-%hook TTKClientABTestService
-- (id)clientABValueFor:(id)key {
-    id override = [BHIManager abOverrides][key];
-    if (override) {
-        return override;
+// Частицы даблтап-анимации: TikTok использует CAEmitterCell с красным цветом.
+// Хукаем только установку «лайкового» (красно-розового) цвета — чужие эмиттеры не трогаем.
+%hook CAEmitterCell
+- (void)setColor:(CGColorRef)color {
+    if ([TWLikeColorManager active] && color) {
+        UIColor *orig = [UIColor colorWithCGColor:color];
+        CGFloat r, g, b, a;
+        [orig getRed:&r green:&g blue:&b alpha:&a];
+        // «лайковый» цвет: красный/розовый доминирует (r > 0.6, g и b малы)
+        BOOL isLikeColor = (r > 0.6f && g < 0.4f && b < 0.5f);
+        if (isLikeColor) {
+            %orig([[BHIManager likeColor] CGColor]);
+            return;
+        }
     }
-    return %orig;
+    %orig;
 }
 %end
-
-
 
 %ctor {
     jailbreakPaths = @[
@@ -4065,32 +2873,4 @@ static void bht_layoutProgressBarInView(UIView *parentView) {
     %init;
 }
 
-static inline BOOL isTikTokLiveAudienceRoomVC(UIViewController *vc) {
-    if (!vc) return NO;
-    NSString *cls = NSStringFromClass([vc class]);
-    return [cls isEqualToString:@"IESLiveMTAudienceViewController"] ||
-           [cls isEqualToString:@"IESLiveAudienceViewController"] ||
-           [cls isEqualToString:@"TTKLiveAudienceContainerViewController"] ||
-           [cls isEqualToString:@"IESLiveRoomSlideViewController"];
-}
 
-%hook UIViewController
-- (void)viewDidAppear:(BOOL)animated {
-    %orig;
-    if ([BHIManager liveRecordButton] && isTikTokLiveAudienceRoomVC(self)) {
-        [[BHTLiveRecorder shared] attachToViewController:self];
-    }
-}
-- (void)viewDidLayoutSubviews {
-    %orig;
-    if ([BHIManager liveRecordButton] && [BHTLiveRecorder shared].currentLiveVC == self) {
-        [[BHTLiveRecorder shared] updateButtonFrameForViewController:self];
-    }
-}
-- (void)viewWillDisappear:(BOOL)animated {
-    %orig;
-    if ([BHTLiveRecorder shared].currentLiveVC == self) {
-        [[BHTLiveRecorder shared] detachFromViewController:self];
-    }
-}
-%end

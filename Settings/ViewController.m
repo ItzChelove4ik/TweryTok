@@ -1,22 +1,15 @@
 //
-//  ViewController.m
-//  StaticTableView
-//
-//  Created by raul on 08/10/2024.
+//  ViewController.m — настройки TweryTok (шаг 3: зачищено + 2 новые секции).
+//  Секции: 0 Feed, 1 Profile, 2 Confirm, 3 Region, 4 Auto Streak (NEW), 5 Like Color (NEW), 6 Developer
 //
 
 #import "ViewController.h"
 #import "CountryTable.h"
-#import "LiveActions.h"
-#import "PlaybackSpeed.h"
-#import "OfflineVideosLimit.h"
-#import "LabsViewController.h"
 #import "../BHIManager.h"
+#import "../TWSeriesManager.h"
 
 @interface ViewController ()
 @property (nonatomic, strong) UITableView *staticTable;
-@property (nonatomic, assign) BOOL isAdditionalCellVisible;
-@property (nonatomic, assign) UIImage *devImage;
 @end
 
 @implementation ViewController
@@ -24,9 +17,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor systemBackgroundColor];
-    
+
     self.title = [BHIManager isTurkish] ? @"TweryTok Ayarları" : @"TweryTok Settings";
-    
+
     if (@available(iOS 13.0, *)) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
         [appearance configureWithDefaultBackground];
@@ -38,9 +31,9 @@
         self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
         self.navigationController.navigationBar.compactAppearance = appearance;
     }
-    
+
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:[BHIManager isTurkish] ? @"Kapat" : @"Done" style:UIBarButtonItemStyleDone target:self action:@selector(dismissSettings)];
-    
+
     self.staticTable = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
     self.staticTable.translatesAutoresizingMaskIntoConstraints = NO;
     self.staticTable.backgroundColor = [UIColor systemBackgroundColor];
@@ -54,196 +47,136 @@
     self.staticTable.dataSource = self;
     self.staticTable.delegate = self;
     self.staticTable.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(regionSelected:)
-                                                 name:@"RegionSelectedNotification"
-                                               object:nil];
 }
 
 - (void)dismissSettings {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-    [self.staticTable reloadData];
-    if (@available(iOS 13.0, *)) {
-        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithDefaultBackground];
-        appearance.backgroundColor = [UIColor systemBackgroundColor];
-        appearance.titleTextAttributes = @{
-            NSForegroundColorAttributeName: [UIColor labelColor]
-        };
-        self.navigationController.navigationBar.standardAppearance = appearance;
-        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
-        self.navigationController.navigationBar.compactAppearance = appearance;
-    }
-}
-
-- (void)regionSelected:(NSNotification *)notification {
-    [self.staticTable reloadData];
-}
+#pragma mark - UITableViewDataSource
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 11;
+    return 7;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     BOOL tr = [BHIManager isTurkish];
     switch (section) {
-        case 0:
-            return tr ? @"Akış (Feed)" : @"Feed";
-        case 1:
-            return tr ? @"Profil" : @"Profile";
-        case 2:
-            return tr ? @"Onay Pencereleri" : @"Confirm";
-        case 3:
-            return tr ? @"Diğer" : @"Other";
-        case 4:
-            return tr ? @"Bölge (Region)" : @"Region";
-        case 5:
-            return tr ? @"Canlı Yayın Butonu İşlevi" : @"Live Button Function";
-        case 6:
-            return tr ? @"Oynatma Hızı" : @"Playback Speed";
-        case 7:
-            return tr ? @"Geliştirici" : @"Developer";
-        case 8:
-            return tr ? @"Gizlilik" : @"Privacy";
-        case 9:
-            return tr ? @"Çevrimdışı Videolar" : @"Offline Videos";
-        case 10:
-            return tr ? @"Deneysel (Labs)" : @"Labs";
-        default:
-            break;
+        case 0: return tr ? @"Akış (Feed)" : @"Feed";
+        case 1: return tr ? @"Profil" : @"Profile";
+        case 2: return tr ? @"Onay Pencereleri" : @"Confirm";
+        case 3: return tr ? @"Bölge (Region)" : @"Region";
+        case 4: return tr ? @"Seri Otomatik Uzatma (Streak)" : @"Auto Streak";
+        case 5: return tr ? @"Beğeni Rengi" : @"Like Color";
+        case 6: return tr ? @"Geliştirici" : @"Developer";
+        default: return @"";
     }
-    return @"";
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     switch (section) {
-        case 0: return 17;
-        case 1: return 5;
-        case 2: return 4;
-        case 3: return 11;
-        case 4: return 4;
-        case 5: return 2;
-        case 6: return 2;
-        case 7: return 1;
-        case 8: return 2;
-        case 9: return 1;
-        case 10: return 1;
+        case 0: return 13;   // Feed (удалены story/live-record switches)
+        case 1: return 5;    // Profile
+        case 2: return 4;    // Confirm
+        case 3: return 4;    // Region
+        case 4: return 6;    // Auto Streak: toggle, time, timezone, sticker, excluded, status
+        case 5: return 3;    // Like Color: toggle, color, reset
+        case 6: return 2;    // Developer: repo link, diagnostics
         default: return 0;
     }
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     BOOL tr = [BHIManager isTurkish];
-    if (indexPath.section == 0) {
+
+    if (indexPath.section == 0) { // Feed
         switch (indexPath.row) {
             case 0:
                 return [self createSwitchCellWithTitle:tr ? @"Reklamları Gizle" : @"Hide Ads"
-                                                Detail:tr ? @"Uygulamadaki tüm reklamları gizler" : @"Hide all ads from the app"
+                                                Detail:tr ? @"Akıştaki tüm reklamları kaldırır" : @"Remove all ads in the feed"
                                                    Key:@"hide_ads"];
             case 1:
                 return [self createSwitchCellWithTitle:tr ? @"TweryTok Menü Butonu" : @"TweryTok Menu Button"
-                                                Detail:tr ? @"Sağ tarafa (profil resminin üstüne) indirme ve ekranı temizleme butonunu ekler" : @"Add download and clear screen menu button on the right side (above avatar)"
+                                                Detail:tr ? @"Videoya indirme menüsü butonu ekler" : @"Add the download menu button to videos"
                                                    Key:@"download_button"];
             case 2:
                 return [self createSwitchCellWithTitle:tr ? @"Paylaşım Menüsü" : @"Share Sheet"
-                                                Detail:tr ? @"İndirilenleri doğrudan iOS paylaşım ekranında açar" : @"Enable sharing options in share sheet"
+                                                Detail:tr ? @"İndirilenler için paylaşım sayfası açar" : @"Open share sheet for downloads"
                                                    Key:@"share_sheet"];
             case 3:
                 return [self createSwitchCellWithTitle:tr ? @"Filigranı Kaldır" : @"Remove Watermark"
-                                                Detail:tr ? @"Videolardaki TikTok filigranını kaldırır" : @"Remove the TikTok watermark from videos"
+                                                Detail:tr ? @"İndirilen videolardan filigranı kaldırır" : @"Remove watermark from downloads"
                                                    Key:@"remove_watermark"];
             case 4:
                 return [self createSwitchCellWithTitle:tr ? @"Ekranı Temizleme Butonu" : @"Clear Screen Button"
-                                                Detail:tr ? @"TweryTok menüsüne ekranı temizleme seçeneğini ekler" : @"Enable clear screen option in TweryTok menu"
+                                                Detail:tr ? @"Arayüz öğelerini gizleme butonu ekler" : @"Add clear-screen option"
                                                    Key:@"remove_elements_button"];
             case 5:
                 return [self createSwitchCellWithTitle:tr ? @"Döngüyü Durdur" : @"Stop Playback"
-                                                Detail:tr ? @"Video bittiğinde otomatik duraklatır" : @"Stop video playback automatically"
+                                                Detail:tr ? @"Videoların döngüde oynatılmasını kapatır" : @"Stop looping playback"
                                                    Key:@"stop_play"];
             case 6:
                 return [self createSwitchCellWithTitle:tr ? @"İlerleme Çubuğunu Göster" : @"Show Progress Bar"
-                                                Detail:tr ? @"Video oynatılırken sarma çubuğunu zorla gösterir" : @"Display progress bar on video playback"
+                                                Detail:tr ? @"Tüm videolarda kaydırılabilir ilerleme çubuğu gösterir" : @"Show draggable progress bar"
                                                    Key:@"show_porgress_bar"];
             case 7:
-                return [self createSwitchCellWithTitle:tr ? @"Şeffaf Yorumlar" : @"Transparent Comments"
-                                                Detail:tr ? @"Yorum panelinin arka planını yarı saydam yapar" : @"Make comments transparent"
-                                                   Key:@"transparent_commnet"];
-            case 8:
                 return [self createSwitchCellWithTitle:tr ? @"Kullanıcı Adlarını Göster" : @"Show Usernames"
-                                                Detail:tr ? @"Görünen ad yerine @kullanıcıadı gösterir" : @"Display usernames on videos"
+                                                Detail:tr ? @"Takma ad yerine kullanıcı adını gösterir" : @"Show @usernames instead of nicknames"
                                                    Key:@"show_username"];
-            case 9:
+            case 8:
                 return [self createSwitchCellWithTitle:tr ? @"Hassas İçerik Filtresini Kapat" : @"Disable Sensitive Content"
-                                                Detail:tr ? @"Hassas içerik sansürünü ve uyarısını kaldırır" : @"Disable sensitive content filter"
+                                                Detail:tr ? @"Hassas içerik maskesini kaldırır" : @"Remove sensitive content mask"
                                                    Key:@"disable_unsensitive"];
-            case 10:
+            case 9:
                 return [self createSwitchCellWithTitle:tr ? @"Uyarıları Kapat" : @"Disable Warnings"
-                                                Detail:tr ? @"COVID, güvenlik vb. uyarı kartlarını gizler" : @"Disable TikTok warnings"
+                                                Detail:tr ? @"Video uyarı etiketlerini gizler" : @"Hide video warning labels"
                                                    Key:@"disable_warnings"];
-            case 11:
+            case 10:
                 return [self createSwitchCellWithTitle:tr ? @"Canlı Yayınları Gizle" : @"Disable Live Streaming"
-                                                Detail:tr ? @"Akışta çıkan canlı yayınları devre dışı bırakır" : @"Disable live video streaming"
+                                                Detail:tr ? @"Akışta canlı yayın bölümlerini gizler" : @"Hide live sections in the feed"
                                                    Key:@"disable_live"];
-            case 12:
+            case 11:
                 return [self createSwitchCellWithTitle:tr ? @"Önerileri Atla" : @"Skip Recommendations"
-                                                Detail:tr ? @"TikTok'un önerdiği videoları otomatik atlar" : @"Skip recommended videos"
+                                                Detail:tr ? @"Öneri kartlarını otomatik atlar" : @"Auto-skip recommendation cards"
                                                    Key:@"skip_recommnedations"];
-            case 13:
-                return [self createSwitchCellWithTitle:tr ? @"Yükleme Bölgesi Bayrağı" : @"Upload Region"
-                                                Detail:tr ? @"Kullanıcı adının yanına yüklendiği ülkenin bayrağını ekler" : @"Show Upload Region Flag Next to Username"
-                                                   Key:@"upload_region"];
-            case 14:
-                return [self createSwitchCellWithTitle:tr ? @"Hikaye İndirme Butonu" : @"Story Download Button"
-                                                Detail:tr ? @"Hikaye paylaşım menüsüne (Bildir butonunun yanına) İndir butonunu ekler" : @"Add download button to the story share menu (next to Report)"
-                                                   Key:@"download_story"];
-            case 15:
-                return [self createSwitchCellWithTitle:tr ? @"Canlı Yayın Kaydet Butonu" : @"Live Record Button"
-                                                Detail:tr ? @"Canlı yayınlarda sağ üst kısma ekran kaydetme butonunu ekler" : @"Add screen record button to the top right in live streams"
-                                                   Key:@"live_record_button"];
-            case 16:
+            case 12:
                 return [self createSwitchCellWithTitle:tr ? @"Kapak Resmini İndir" : @"Download Cover Image"
-                                                Detail:tr ? @"İndirme menüsüne videonun kapak resmini kaydetme seçeneğini ekler" : @"Add option to save video cover image in download menu"
+                                                Detail:tr ? @"İndirme menüsüne kapak resmi seçeneği ekler" : @"Add cover image option in download menu"
                                                    Key:@"download_cover_image"];
-            default:
-                break;
+            default: break;
         }
-    } else if (indexPath.section == 1) {
+    } else if (indexPath.section == 1) { // Profile
         switch (indexPath.row) {
             case 0:
-                return [self createSwitchCellWithTitle:tr ? @"Profil Resmini Kaydet" : @"Profile Save"
-                                                Detail:tr ? @"Profil resmine uzun basarak galeriye kaydeder" : @"Save profile details to clipboard"
-                                                   Key:@"save_profile"];
-            case 1:
-                return [self createSwitchCellWithTitle:tr ? @"Profil Bilgilerini Kopyala" : @"Profile Copy"
-                                                Detail:tr ? @"Profile uzun basarak bilgileri panoya kopyalar" : @"Copy profile information"
-                                                   Key:@"copy_profile_information"];
-            case 2:
-                return [self createSwitchCellWithTitle:tr ? @"Video Beğeni Sayısı" : @"Video Like Count"
-                                                Detail:tr ? @"Profil ızgarasında video beğeni sayılarını gösterir" : @"Show the number of likes on videos"
-                                                   Key:@"video_like_count"];
-            case 3:
-                return [self createSwitchCellWithTitle:tr ? @"Video Yüklenme Tarihi" : @"Video Upload Date"
-                                                Detail:tr ? @"Profil ızgarasında videonun yüklenme tarihini gösterir" : @"Show the date videos were uploaded"
-                                                   Key:@"video_upload_date"];
-            case 4:
-                return [self createSwitchCellWithTitle:tr ? @"Takip Durumu Göstergesi" : @"Follow Status Indicator"
-                                                Detail:tr ? @"Kullanıcı adının yanında sizi takip edip etmediğini gösterir" : @"Show whether user follows you next to their username"
+                return [self createSwitchCellWithTitle:tr ? @"Takip Durumu Rozeti" : @"Follow Status Badge"
+                                                Detail:tr ? @"Profilde takip durumu rozeti gösterir" : @"Show follow status badge on profiles"
                                                    Key:@"follow_status_badge"];
-            default:
-                break;
+            case 1:
+                return [self createSwitchCellWithTitle:tr ? @"Video Sayısı" : @"Video Count"
+                                                Detail:tr ? @"Profilde video sayısını gösterir" : @"Show video count on profiles"
+                                                   Key:@"video_count"];
+            case 2:
+                return [self createSwitchCellWithTitle:tr ? @"Profil Fotoğrafını Kaydet" : @"Save Profile Photo"
+                                                Detail:tr ? @"Uzun basışla profil fotoğrafını kaydeder" : @"Long-press to save profile photo"
+                                                   Key:@"save_profile"];
+            case 3:
+                return [self createSwitchCellWithTitle:tr ? @"Profil Bilgilerini Kopyala" : @"Copy Profile Information"
+                                                Detail:tr ? @"Uzun basışla profil bilgilerini kopyalar" : @"Long-press to copy profile info"
+                                                   Key:@"copy_profile_information"];
+            case 4:
+                return [self createSwitchCellWithTitle:tr ? @"Video Meta Verileri" : @"Video Metadata"
+                                                Detail:tr ? @"Profil gridinde beğeni sayısı ve tarih gösterir" : @"Show like count & date in profile grid"
+                                                   Key:@"video_like_count"];
+            default: break;
         }
-    } else if (indexPath.section == 2) {
+    } else if (indexPath.section == 2) { // Confirm
         switch (indexPath.row) {
             case 0:
                 return [self createSwitchCellWithTitle:tr ? @"Beğeni Onayı" : @"Like Confirmation"
-                                                Detail:tr ? @"Videoyu beğenmeden önce onay ister" : @"Confirm before liking a video"
+                                                Detail:tr ? @"Beğenmeden önce onay ister" : @"Confirm before liking"
                                                    Key:@"like_confirm"];
             case 1:
-                return [self createSwitchCellWithTitle:tr ? @"Yorum Beğeni Onayı" : @"Like Comment Confirmation"
+                return [self createSwitchCellWithTitle:tr ? @"Yorum Beğenme Onayı" : @"Like Comment Confirmation"
                                                 Detail:tr ? @"Yorumu beğenmeden önce onay ister" : @"Confirm before liking a comment"
                                                    Key:@"like_comment_confirm"];
             case 2:
@@ -254,134 +187,18 @@
                 return [self createSwitchCellWithTitle:tr ? @"Takip Onayı" : @"Follow Confirmation"
                                                 Detail:tr ? @"Birini takip etmeden önce onay ister" : @"Confirm before following a user"
                                                    Key:@"follow_confirm"];
-            default:
-                break;
+            default: break;
         }
-    } else if (indexPath.section == 3) {
-        switch (indexPath.row) {
-            case 0:
-                return [self createSwitchCellWithTitle:tr ? @"Daima Safari'de Aç" : @"Always Open Safari"
-                                                Detail:tr ? @"Bağlantıları doğrudan sistem Safari tarayıcısında açar" : @"Always open links in Safari"
-                                                   Key:@"openInBrowser"];
-            case 1:
-                return [self createSwitchCellWithTitle:tr ? @"Sahte Verileri Aç" : @"Enable Fake Changes"
-                                                Detail:tr ? @"Özel sahte profil verilerini etkinleştirir" : @"Enable fake profile changes"
-                                                   Key:@"en_fake"];
-            case 2: {
-                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
-                
-                UILabel *followerLabel = [[UILabel alloc] init];
-                followerLabel.text = tr ? @"Takipçi:" : @"Follower:";
-                followerLabel.font = [UIFont systemFontOfSize:16];
-                followerLabel.translatesAutoresizingMaskIntoConstraints = NO;
-                [cell.contentView addSubview:followerLabel];
-                
-                UITextField *textField = [[UITextField alloc] init];
-                textField.placeholder = tr ? @"Takipçi sayısı girin" : @"Enter follower count";
-                textField.borderStyle = UITextBorderStyleRoundedRect;
-                textField.delegate = self;
-                textField.tag = 2;
-                textField.returnKeyType = UIReturnKeyDone;
-                textField.translatesAutoresizingMaskIntoConstraints = NO;
-                [cell.contentView addSubview:textField];
-                
-                [NSLayoutConstraint activateConstraints:@[
-                    [followerLabel.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:15],
-                    [followerLabel.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-                    [followerLabel.widthAnchor constraintEqualToConstant:100],
-                    
-                    [textField.leadingAnchor constraintEqualToAnchor:followerLabel.trailingAnchor constant:10],
-                    [textField.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-15],
-                    [textField.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-                    [textField.heightAnchor constraintEqualToConstant:30]
-                ]];
-                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-                NSString *savedText = [defaults stringForKey:@"follower_count"];
-                if (savedText) {
-                    textField.text = savedText;
-                }
-                
-                return cell;
-            }
-            case 3: {
-                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
-                
-                UILabel *followingLabel = [[UILabel alloc] init];
-                followingLabel.text = tr ? @"Takip Edilen:" : @"Following:";
-                followingLabel.font = [UIFont systemFontOfSize:16];
-                followingLabel.translatesAutoresizingMaskIntoConstraints = NO;
-                [cell.contentView addSubview:followingLabel];
-                
-                UITextField *textField = [[UITextField alloc] init];
-                textField.placeholder = tr ? @"Takip edilen sayısı girin" : @"Enter following count";
-                textField.borderStyle = UITextBorderStyleRoundedRect;
-                textField.delegate = self;
-                textField.tag = 1;
-                textField.returnKeyType = UIReturnKeyDone;
-                textField.translatesAutoresizingMaskIntoConstraints = NO;
-                [cell.contentView addSubview:textField];
-                
-                [NSLayoutConstraint activateConstraints:@[
-                    [followingLabel.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:15],
-                    [followingLabel.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-                    [followingLabel.widthAnchor constraintEqualToConstant:100],
-                    
-                    [textField.leadingAnchor constraintEqualToAnchor:followingLabel.trailingAnchor constant:10],
-                    [textField.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-15],
-                    [textField.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-                    [textField.heightAnchor constraintEqualToConstant:30]
-                ]];
-                
-                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-                NSString *savedText = [defaults stringForKey:@"following_count"];
-                if (savedText) {
-                    textField.text = savedText;
-                }
-                
-                return cell;
-            }
-            case 4:
-                return [self createSwitchCellWithTitle:tr ? @"Sahte Mavi Tik" : @"Fake Verified"
-                                                Detail:tr ? @"Profilinizde doğrulanmış onay rozeti gösterir" : @"Make your account appear verified"
-                                                   Key:@"fake_verify"];
-            case 5:
-                return [self createSwitchCellWithTitle:tr ? @"Genişletilmiş Biyo" : @"Extended Bio"
-                                                Detail:tr ? @"Profil biyografisindeki karakter sınırını kaldırır" : @"Extend bio section of your profile"
-                                                   Key:@"extended_bio"];
-            case 6:
-                return [self createSwitchCellWithTitle:tr ? @"Genişletilmiş Yorumlar" : @"Extended Comments"
-                                                Detail:tr ? @"Yorum yazma alanındaki karakter sınırını kaldırır" : @"Extend the length of your comments"
-                                                   Key:@"extendedComment"];
-            case 7:
-                return [self createSwitchCellWithTitle:tr ? @"HD Video Yükleme" : @"Upload HD"
-                                                Detail:tr ? @"Videoları doğrudan HD kalitede yükler" : @"Upload videos in HD quality"
-                                                   Key:@"upload_hd"];
-            case 8:
-                return [self createSwitchCellWithTitle:tr ? @"Uygulama Kilidi" : @"App Lock"
-                                                Detail:tr ? @"Uygulamayı Face ID / Parola ile kilitler" : @"Lock the app with a passcode"
-                                                   Key:@"padlock"];
-            case 9:
-                return [self createSwitchCellWithTitle:tr ? @"FLEX'i Etkinleştir" : @"Enable Flex"
-                                                Detail:tr ? @"Geliştirici konsolunu açar (Sadece geliştiriciler için)" : @"Developers Only, DON'T touch it if you don't know what you are doing."
-                                                   Key:@"flex_enebaled"];
-            case 10:
-                return [self createSwitchCellWithTitle:tr ? @"Ekran Görüntüsü Korumasını Engelle" : @"Bypass Screenshot Detection"
-                                                Detail:tr ? @"Ekran görüntüsü alındığında bildirim ve paylaşım penceresini engeller" : @"Take screenshots freely; suppress screenshot notifications and the share popup"
-                                                   Key:@"disable_screenshot_detection"];
-            default:
-                break;
-        }
-    } else if (indexPath.section == 4) {
+    } else if (indexPath.section == 3) { // Region
         switch (indexPath.row) {
             case 0:
                 return [self createSwitchCellWithTitle:tr ? @"Bölge Değiştirmeyi Aç" : @"Enable Region Changing"
-                                                Detail:tr ? @"Özel bölge/konum değiştirme işlevini aktif eder" : @"Enable region changing functionality"
+                                                Detail:tr ? @"Bölge değiştirme işlevini aktif eder" : @"Enable region changing"
                                                    Key:@"en_region"];
             case 1: {
-                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
                 UITableViewCell *regions = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
                 regions.textLabel.text = tr ? @"Bölgeler" : @"Regions";
-                NSDictionary *selectedRegion = [defaults dictionaryForKey:@"region"];
+                NSDictionary *selectedRegion = [[NSUserDefaults standardUserDefaults] dictionaryForKey:@"region"];
                 if (selectedRegion) {
                     NSString *areaName = tr ? (selectedRegion[@"area_tr"] ?: selectedRegion[@"area"]) : selectedRegion[@"area"];
                     regions.detailTextLabel.text = areaName ?: (tr ? @"Seçilmedi" : @"None");
@@ -392,59 +209,106 @@
             }
             case 2:
                 return [self createSwitchCellWithTitle:tr ? @"Bölge Değiştirme Girişini Göster" : @"Show Region Change Option"
-                                                Detail:tr ? @"TikTok resmi hesap bölgesi değiştirme girişini ayarlarda gösterir" : @"Surface TikTok's official account region change entry in settings"
+                                                Detail:tr ? @"TikTok resmi bölge değiştirme girişini gösterir" : @"Surface official region change entry"
                                                    Key:@"show_region_change_option"];
             case 3: {
                 UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
                 cell.textLabel.text = tr ? @"Bölgeyi Değiştir (Resmi)" : @"Change Region (Official)";
                 cell.textLabel.textColor = [UIColor systemBlueColor];
-                cell.detailTextLabel.text = tr ? @"TikTok resmi bölge değiştirme sayfasını açar" : @"Open TikTok official region change page directly";
+                cell.detailTextLabel.text = tr ? @"TikTok resmi bölge değiştirme sayfasını açar" : @"Open official region change page";
                 cell.imageView.image = [UIImage systemImageNamed:@"arrow.up.right.square"];
                 cell.detailTextLabel.textColor = [UIColor systemGrayColor];
                 return cell;
             }
-            default:
-                break;
+            default: break;
         }
-    } else if (indexPath.section == 5) {
+    } else if (indexPath.section == 4) { // ============ AUTO STREAK (NEW) ============
         switch (indexPath.row) {
             case 0:
-                return [self createSwitchCellWithTitle:tr ? @"Canlı Buton Eylemi" : @"Live Button Action"
-                                                Detail:tr ? @"Sol üstteki butonun varsayılan işlevini değiştirir" : @"Change The Default Live Button Action"
-                                                   Key:@"en_livefunc"];
+                return [self createSwitchCellWithTitle:tr ? @"Seri Otomatik Uzatma" : @"Auto Streak"
+                                                Detail:tr ? @"Sohbetlerdeki aktif serilere (🔥) her gün otomatik sticker gönderir" : @"Automatically send a sticker daily to chats with an active streak (🔥)"
+                                                   Key:@"twery_streak_enabled"];
             case 1: {
-                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-                UITableViewCell *liveAction = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-                liveAction.textLabel.text = tr ? @"Eylemler" : @"Actions";
-                NSString *selectedLiveAction = [defaults valueForKey:@"live_action"];
-                NSArray *liveFuncTitles = tr ? @[@"Varsayılan", @"TweryTok Ayarları", @"Oynatma Hızı"] : @[@"Default", @"TweryTok Settings", @"Playback Speed"];
-                if (selectedLiveAction != nil) {
-                    liveAction.detailTextLabel.text = [NSString stringWithFormat:@"%@", [liveFuncTitles objectAtIndex:[selectedLiveAction integerValue]]];
-                }
-                
-                return liveAction;
-            }
-            default:
-                break;
-        }
-    } else if (indexPath.section == 6) {
-        switch (indexPath.row) {
-            case 0: {
-                return [self createSwitchCellWithTitle:tr ? @"Kalıcı Oynatma Hızı" : @"Playback Speed"
-                                                Detail:tr ? @"Sabit video oynatma hızını aktif eder" : @"Enable Presistent Playback Speed."
-                                                   Key:@"playback_en"];
-            }
-            case 1: {
-                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-                cell.textLabel.text = tr ? @"Hızlar" : @"Speeds";
-                
-                NSNumber *selectedSpeed = [BHIManager selectedSpeed];
-                cell.detailTextLabel.text = [NSString stringWithFormat:@"%@ x", selectedSpeed];
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Gönderim Saati" : @"Send Time";
+                NSInteger h = [BHIManager streakSendHour];
+                NSInteger m = [BHIManager streakSendMinute];
+                cell.detailTextLabel.text = [NSString stringWithFormat:@"%02ld:%02ld", (long)h, (long)m];
+                cell.imageView.image = [UIImage systemImageNamed:@"clock"];
                 return cell;
             }
+            case 2: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Saat Dilimi" : @"Time Zone";
+                cell.detailTextLabel.text = [BHIManager streakTimeZoneIdentifier];
+                cell.imageView.image = [UIImage systemImageNamed:@"globe"];
+                return cell;
+            }
+            case 3: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Sticker" : @"Sticker";
+                cell.detailTextLabel.text = tr ? @"🔥 Varsayılan" : @"🔥 Default";
+                cell.imageView.image = [UIImage systemImageNamed:@"flame"];
+                return cell;
+            }
+            case 4: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Hariç Tutulan Sohbetler" : @"Excluded Chats";
+                NSArray *excl = [BHIManager streakExcludedConversations];
+                cell.detailTextLabel.text = [NSString stringWithFormat:@"%lu", (unsigned long)(excl.count)];
+                cell.imageView.image = [UIImage systemImageNamed:@"person.2.slash"];
+                return cell;
+            }
+            case 5: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Durum" : @"Status";
+                NSDate *next = [[TWSeriesManager shared] nextFireDate];
+                if (next) {
+                    NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
+                    fmt.dateStyle = NSDateFormatterShortStyle;
+                    fmt.timeStyle = NSDateFormatterShortStyle;
+                    cell.detailTextLabel.text = [NSString stringWithFormat:@"%@: %@", tr ? @"Sonraki gönderim" : @"Next send", [fmt stringFromDate:next]];
+                } else {
+                    cell.detailTextLabel.text = tr ? @"Devre dışı" : @"Disabled";
+                }
+                cell.imageView.image = [UIImage systemImageNamed:@"timer"];
+                cell.detailTextLabel.textColor = [UIColor systemGrayColor];
+                return cell;
+            }
+            default: break;
         }
-    }
-    else if (indexPath.section == 7) {
+    } else if (indexPath.section == 5) { // ============ LIKE COLOR (NEW) ============
+        switch (indexPath.row) {
+            case 0:
+                return [self createSwitchCellWithTitle:tr ? @"Beğeni Rengi" : @"Like Color"
+                                                Detail:tr ? @"Beğeni butonunu ve kalp animasyonunu renklendirir" : @"Recolor the like button and heart animation"
+                                                   Key:@"twery_like_color_enabled"];
+            case 1: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Renk" : @"Color";
+                NSString *hex = [BHIManager likeColorHex];
+                if (hex.length > 0) {
+                    cell.detailTextLabel.text = [@"#" stringByAppendingString:hex];
+                    UIView *swatch = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
+                    swatch.layer.cornerRadius = 6;
+                    swatch.backgroundColor = [BHIManager likeColor] ?: [UIColor systemRedColor];
+                    cell.accessoryView = swatch;
+                } else {
+                    cell.detailTextLabel.text = tr ? @"Varsayılan (kırmızı)" : @"Default (red)";
+                }
+                cell.imageView.image = [UIImage systemImageNamed:@"paintpalette"];
+                return cell;
+            }
+            case 2: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Rengi Sıfırla" : @"Reset Color";
+                cell.textLabel.textColor = [UIColor systemRedColor];
+                cell.imageView.image = [UIImage systemImageNamed:@"arrow.counterclockwise"];
+                return cell;
+            }
+            default: break;
+        }
+    } else if (indexPath.section == 6) { // Developer
         switch (indexPath.row) {
             case 0: {
                 UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
@@ -455,59 +319,161 @@
                 cell.detailTextLabel.textColor = [UIColor systemGrayColor];
                 return cell;
             }
-            default:
-                break;
-        }
-    }
-    else if (indexPath.section == 8) {
-        switch (indexPath.row) {
-            case 0:
-                return [self createSwitchCellWithTitle:tr ? @"Hayalet Modu: Okundu Bilgisi" : @"Ghost Mode: Read Receipts"
-                                                Detail:tr ? @"DM mesajlarını görüldü bildirimi gitmeden okur" : @"Read DMs without sending seen receipts"
-                                                   Key:@"ghost_read_receipts"];
-            case 1:
-                return [self createSwitchCellWithTitle:tr ? @"Hayalet Modu: Yazıyor Bilgisi" : @"Ghost Mode: Typing"
-                                                Detail:tr ? @"DM'lerde yazarken yazıyor bildirimini engeller" : @"Type without sending typing indicators"
-                                                   Key:@"ghost_typing"];
-            default:
-                break;
-        }
-    }
-    else if (indexPath.section == 9) {
-        switch (indexPath.row) {
-            case 0: {
-                NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-                cell.textLabel.text = tr ? @"Video Limiti" : @"Videos Limit";
-                NSNumber *limit = [defaults objectForKey:@"offline_videos_limit"];
-                if (limit != nil && [limit integerValue] > 0) {
-                    cell.detailTextLabel.text = tr ? [NSString stringWithFormat:@"%@ video", limit] : [NSString stringWithFormat:@"%@ videos", limit];
-                } else {
-                    cell.detailTextLabel.text = tr ? @"Varsayılan" : @"Default";
-                }
-                return cell;
-            }
-            default:
-                break;
-        }
-    }
-    else if (indexPath.section == 10) {
-        switch (indexPath.row) {
-            case 0: {
-                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-                cell.textLabel.text = tr ? @"A/B Deney Gezgini" : @"A/B Experiment Explorer";
+            case 1: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+                cell.textLabel.text = tr ? @"Streak Tanılama (Log)" : @"Streak Diagnostics (Log)";
                 cell.textLabel.textColor = [UIColor systemBlueColor];
-                cell.detailTextLabel.text = tr ? @"TikTok dahili A/B bayraklarını görüntüleyin ve değiştirin" : @"View & override TikTok's internal A/B flags";
-                cell.imageView.image = [UIImage systemImageNamed:@"flask"];
-                cell.detailTextLabel.textColor = [UIColor systemGrayColor];
+                cell.imageView.image = [UIImage systemImageNamed:@"stethoscope"];
                 return cell;
             }
-            default:
-                break;
+            default: break;
         }
     }
     return [UITableViewCell new];
 }
+
+#pragma mark - UITableViewDelegate
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+
+    if (indexPath.section == 3 && indexPath.row == 1) {
+        CountryTable *countryTable = [[CountryTable alloc] init];
+        [self presentModalNavWithRoot:countryTable];
+    }
+    else if (indexPath.section == 3 && indexPath.row == 3) {
+        NSString *target = @"https://www.tiktok.com/tpp/inapp/pns_product_poseidon/change-region-selector.html";
+        NSMutableCharacterSet *allowed = [[NSCharacterSet alphanumericCharacterSet] mutableCopy];
+        [allowed addCharactersInString:@"-._~"];
+        NSString *encoded = [target stringByAddingPercentEncodingWithAllowedCharacters:allowed];
+        NSString *route = [NSString stringWithFormat:@"aweme://webview/?hide_nav_bar=1&use_spark=1&show_loading=1&url=%@", encoded];
+        NSURL *url = [NSURL URLWithString:route];
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+    }
+    else if (indexPath.section == 4 && indexPath.row == 1) {
+        [self presentStreakTimePicker];
+    }
+    else if (indexPath.section == 4 && indexPath.row == 2) {
+        [self presentStreakTimeZonePicker];
+    }
+    else if (indexPath.section == 4 && indexPath.row == 5) {
+        // статус — просто обновить таблицу
+        [self.staticTable reloadData];
+    }
+    else if (indexPath.section == 5 && indexPath.row == 1) {
+        [self presentLikeColorPicker];
+    }
+    else if (indexPath.section == 5 && indexPath.row == 2) {
+        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"twery_like_color_hex"];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        [self.staticTable reloadData];
+    }
+    else if (indexPath.section == 6 && indexPath.row == 0) {
+        NSURL *url = [NSURL URLWithString:@"https://github.com/ItzChelove4ik/TweryTok"];
+        if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+        }
+    }
+    else if (indexPath.section == 6 && indexPath.row == 1) {
+        [[TWSeriesManager shared] logStreakDiagnostics];
+        [self showToast:([BHIManager isTurkish] ? @"Konsola yazıldı (Console.app)" : @"Logged to console (Console.app)")];
+    }
+}
+
+#pragma mark - Pickers (Auto Streak)
+
+- (void)presentStreakTimePicker {
+    BOOL tr = [BHIManager isTurkish];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:tr ? @"Gönderim Saati" : @"Send Time"
+                                                                   message:nil
+                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    for (NSInteger h = 6; h <= 20; h += 2) {
+        NSString *title = [NSString stringWithFormat:@"%02ld:00", (long)h];
+        [alert addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+            [[NSUserDefaults standardUserDefaults] setInteger:h forKey:@"twery_streak_hour"];
+            [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:@"twery_streak_minute"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            [[TWSeriesManager shared] start];
+            [self.staticTable reloadData];
+        }]];
+    }
+    [alert addAction:[UIAlertAction actionWithTitle:tr ? @"İptal" : @"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentAdaptiveAlert:alert];
+}
+
+- (void)presentStreakTimeZonePicker {
+    BOOL tr = [BHIManager isTurkish];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:tr ? @"Saat Dilimi" : @"Time Zone"
+                                                                   message:nil
+                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    NSArray<NSString *> *zones = @[@"Europe/Moscow", @"Europe/Kyiv", @"Europe/Istanbul", @"Europe/London",
+                                    @"Europe/Berlin", @"Asia/Almaty", @"Asia/Tbilisi", @"America/New_York"];
+    for (NSString *z in zones) {
+        [alert addAction:[UIAlertAction actionWithTitle:z style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+            [[NSUserDefaults standardUserDefaults] setObject:z forKey:@"twery_streak_timezone"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            [self.staticTable reloadData];
+        }]];
+    }
+    [alert addAction:[UIAlertAction actionWithTitle:tr ? @"İptal" : @"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentAdaptiveAlert:alert];
+}
+
+#pragma mark - Pickers (Like Color)
+
+- (void)presentLikeColorPicker {
+    BOOL tr = [BHIManager isTurkish];
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:tr ? @"Beğeni Rengi" : @"Like Color"
+                                                                   message:nil
+                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    NSDictionary<NSString *, NSString *> *presets = @{
+        @"❤️ Kırmızı (varsayılan)": @"FE2C55",   // TikTok red
+        @"🩷 Pembe": @"FF3B8D",
+        @"💙 Mavi": @"00C2FF",
+        @"💚 Yeşil": @"34C759",
+        @"💜 Mor": @"AF52DE",
+        @"🧡 Turuncu": @"FF9500",
+        @"💛 Sarı": @"FFCC00",
+        @"🤍 Beyaz": @"FFFFFF",
+    };
+    for (NSString *name in presets) {
+        [alert addAction:[UIAlertAction actionWithTitle:name style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+            [[NSUserDefaults standardUserDefaults] setObject:presets[name] forKey:@"twery_like_color_hex"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            [self.staticTable reloadData];
+        }]];
+    }
+    [alert addAction:[UIAlertAction actionWithTitle:tr ? @"İptal" : @"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentAdaptiveAlert:alert];
+}
+
+- (void)presentAdaptiveAlert:(UIAlertController *)alert {
+    alert.popoverPresentationController.sourceView = self.view;
+    alert.popoverPresentationController.sourceRect = CGRectMake(self.view.bounds.size.width / 2.0, self.view.bounds.size.height / 2.0, 1.0, 1.0);
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)showToast:(NSString *)message {
+    UILabel *label = [[UILabel alloc] init];
+    label.text = message;
+    label.textColor = [UIColor whiteColor];
+    label.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75];
+    label.textAlignment = NSTextAlignmentCenter;
+    label.layer.cornerRadius = 8;
+    label.clipsToBounds = YES;
+    label.frame = CGRectMake(20, self.view.bounds.size.height - 100, self.view.bounds.size.width - 40, 36);
+    label.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+    [self.view addSubview:label];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [UIView animateWithDuration:0.3 animations:^{
+            label.alpha = 0;
+        } completion:^(BOOL finished) {
+            [label removeFromSuperview];
+        }];
+    });
+}
+
+#pragma mark - Хелперы
 
 - (void)presentModalNavWithRoot:(UIViewController *)rootVC {
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:rootVC];
@@ -521,61 +487,23 @@
     [self presentViewController:navController animated:YES completion:nil];
 }
 
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    NSLog(@"Selected row at index: %ld", (long)indexPath.section);
-    if (indexPath.section == 4 && indexPath.row == 1){
-        CountryTable *countryTable = [[CountryTable alloc] init];
-        [self presentModalNavWithRoot:countryTable];
-    }
-    else if (indexPath.section == 4 && indexPath.row == 3){
-        NSString *target = @"https://www.tiktok.com/tpp/inapp/pns_product_poseidon/change-region-selector.html";
-        NSMutableCharacterSet *allowed = [[NSCharacterSet alphanumericCharacterSet] mutableCopy];
-        [allowed addCharactersInString:@"-._~"];
-        NSString *encoded = [target stringByAddingPercentEncodingWithAllowedCharacters:allowed];
-        NSString *route = [NSString stringWithFormat:@"aweme://webview/?hide_nav_bar=1&use_spark=1&show_loading=1&url=%@", encoded];
-        NSURL *url = [NSURL URLWithString:route];
-        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-    }
-    else if (indexPath.section == 5 && indexPath.row == 1){
-        LiveActions *liveActions = [[LiveActions alloc] init];
-        [self presentModalNavWithRoot:liveActions];
-    } else if (indexPath.section == 6 && indexPath.row == 1) {
-        PlaybackSpeed *playbackSpeed = [[PlaybackSpeed alloc] init];
-        [self presentModalNavWithRoot:playbackSpeed];
-    }
-    else if (indexPath.section == 7 && indexPath.row == 0){
-        NSURL *url = [NSURL URLWithString:@"https://github.com/ItzChelove4ik/TweryTok"];
-        if ([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-        }
-    }
-    else if (indexPath.section == 9 && indexPath.row == 0){
-        OfflineVideosLimit *offlineLimit = [[OfflineVideosLimit alloc] init];
-        [self presentModalNavWithRoot:offlineLimit];
-    }
-    else if (indexPath.section == 10 && indexPath.row == 0){
-        LabsViewController *labs = [[LabsViewController alloc] init];
-        [self presentModalNavWithRoot:labs];
-    }
-}
-
 - (UITableViewCell *)createSwitchCellWithTitle:(NSString *)title Detail:(NSString*)detail Key:(NSString*)key {
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-    
+
     UISwitch *switchView = [[UISwitch alloc] init];
     [cell.contentView addSubview:switchView];
     cell.accessoryView = switchView;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if ([defaults objectForKey:key] != nil) {
         switchView.on = [defaults boolForKey:key];
-    } else if ([key isEqualToString:@"hide_ads"] || [key isEqualToString:@"download_button"] || [key isEqualToString:@"download_story"] || [key isEqualToString:@"live_record_button"] || [key isEqualToString:@"remove_watermark"] || [key isEqualToString:@"upload_hd"] || [key isEqualToString:@"download_cover_image"] || [key isEqualToString:@"follow_status_badge"] || [key isEqualToString:@"show_porgress_bar"]) {
+    } else if ([key isEqualToString:@"hide_ads"] || [key isEqualToString:@"download_button"] || [key isEqualToString:@"remove_watermark"] || [key isEqualToString:@"download_cover_image"] || [key isEqualToString:@"follow_status_badge"] || [key isEqualToString:@"show_porgress_bar"]) {
         switchView.on = YES;
     } else {
         switchView.on = NO;
     }
     switchView.accessibilityLabel = key;
     [switchView addTarget:self action:@selector(switchToggled:) forControlEvents:UIControlEventValueChanged];
-    
+
     cell.textLabel.text = title;
     cell.detailTextLabel.numberOfLines = 0;
     cell.detailTextLabel.text = detail;
@@ -588,23 +516,15 @@
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setBool:sender.isOn forKey:key];
     [defaults synchronize];
-}
-
-- (void)textFieldDidEndEditing:(UITextField *)textField {
-    if (textField.tag == 1){
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        [defaults setObject:textField.text forKey:@"following_count"];
-        [defaults synchronize];
-    } else if (textField.tag == 2){
-        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-        [defaults setObject:textField.text forKey:@"follower_count"];
-        [defaults synchronize];
+    // Стрик-тумблер: перезапустить движок сразу
+    if ([key isEqualToString:@"twery_streak_enabled"]) {
+        if (sender.isOn) {
+            [[TWSeriesManager shared] start];
+        } else {
+            [[TWSeriesManager shared] stop];
+        }
+        [self.staticTable reloadData];
     }
-}
-
-- (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    [textField resignFirstResponder];
-    return YES;
 }
 
 @end
