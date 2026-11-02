@@ -1,15 +1,10 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
-#import <SafariServices/SafariServices.h>
 #import "BHIManager.h"
-#import "SecurityViewController.h"
 #import "BHDownload.h"
-#import "BHMultipleDownload.h"
 #import "JGProgressHUD/JGProgressHUD.h"
 #import <Photos/Photos.h>
 #import "Settings/ViewController.h"
-#import "Settings/PlaybackSpeed.h"
-#import "BHTLiveRecorder.h"
 
 @interface AppDelegate : NSObject <UIApplicationDelegate>
 @end
@@ -332,7 +327,7 @@
 - (void)showTweryTokDownloadActionSheet;
 - (void)toggleTweryTokHideElements;
 @end
-@interface AWEFeedViewTemplateCell () <BHDownloadDelegate, BHMultipleDownloadDelegate>
+@interface AWEFeedViewTemplateCell () <BHDownloadDelegate>
 @end
 
 @interface AWEFeedViewCell: AWEFeedViewTemplateCell
@@ -367,64 +362,13 @@
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index;
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC;
 @end
-@interface AWEAwemeDetailTableViewCell () <BHDownloadDelegate, BHMultipleDownloadDelegate>
-@end
-
-@interface TTKStoryDetailTableViewCell: UITableViewCell
-@property(nonatomic, strong, readwrite) UIViewController *viewController;
-@property(nonatomic, strong, readwrite) UIViewController *parentVC;
-@property(nonatomic, assign) BOOL elementsHidden;
-@property (nonatomic, strong) JGProgressHUD *hud;
-@property (nonatomic, retain) NSString *fileextension;
-- (void)addHideElementButton;
-- (void)hideElementButtonHandler:(UIButton *)sender;
-- (void)addDownloadButton;
-- (void) downloadButtonHandler:(UIButton *)sender;
-- (void)downloadVideo:(AWEAwemeBaseViewController *)rootVC;
-- (void)downloadMusic:(AWEAwemeBaseViewController *)rootVC;
-- (void)copyMusic:(AWEAwemeBaseViewController *)rootVC;
-- (void)copyVideo:(AWEAwemeBaseViewController *)rootVC;
-- (void)copyDecription:(AWEAwemeBaseViewController *)rootVC;
-- (void)addTweryTokMenuButton;
-- (void)bhtMenuButtonHandler:(UIButton *)sender;
-- (void)setupTweryTokMenu:(UIButton *)sender;
-- (UIView *)bhtFindAvatarView:(UIView *)parent;
-- (void)showTweryTokDownloadActionSheet;
-- (void)toggleTweryTokHideElements;
-- (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC photoIndex:(unsigned long)index;
-- (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC;
-@end
-@interface BHTStoryProgressBar : UIView
-@property (nonatomic, strong) UIView *trackBgView;
-@property (nonatomic, strong) UIView *trackFillView;
-@property (nonatomic, strong) UIView *thumbView;
-@property (nonatomic, assign) BOOL isDragging;
-@property (nonatomic, assign) CGFloat progress;
-@property (nonatomic, strong) NSTimer *timer;
-@property (nonatomic, weak) id cell;
-- (void)startTimer;
-- (void)stopTimer;
-- (void)updateProgress:(CGFloat)p;
-- (void)seekToPercent:(CGFloat)percent;
+@interface AWEAwemeDetailTableViewCell () <BHDownloadDelegate>
 @end
 
 @interface TTKStory2FeedViewController : UIViewController
 @end
 
 @interface TTKStory2ViewerViewController : UIViewController
-@end
-
-@interface TTKStoryDetailTableViewCell () <BHDownloadDelegate, BHMultipleDownloadDelegate>
-@property (nonatomic, strong) id bht_storyModel;
-@property (nonatomic, strong) BHTStoryProgressBar *bht_progressBar;
-- (void)configWithModel:(id)model;
-- (void)configureWithModel:(id)model;
-- (void)bht_updateProgressBarState;
-- (void)bht_layoutProgressBar;
-- (id)bht_findPlayer;
-- (NSNumber *)bht_storyCurrentPlaybackPercent;
-- (void)bht_seekStoryToPercent:(NSNumber *)percentNum;
-- (void)downloadCoverImage:(AWEAwemeBaseViewController *)rootVC;
 @end
 
 @interface TTKFeedPassthroughStackView: UIStackView
