@@ -58,7 +58,18 @@ static NSString * const kTWLikeLog = @"[TweryTok/LikeColor] ";
 
 + (UIImage *)tintedImageForName:(NSString *)name {
     if (![self active]) return nil;
-    UIImage *original = [UIImage imageNamed:name];
+    // РЕКУРСИОННЫЙ СТРАЖ: [UIImage imageNamed:] ниже — это хукнутый метод, который
+    // снова вызовет tintedImageForName: для того же имени. Без стража — бесконечная
+    // рекурсия и stack overflow (краш приложения). Это был баг краша на запуске.
+    static BOOL sInTint = NO;
+    if (sInTint) return nil;  // вложенный вызов — не перекрашиваем, выходим
+    sInTint = YES;
+    UIImage *original = nil;
+    @try {
+        original = [UIImage imageNamed:name];
+    } @finally {
+        sInTint = NO;
+    }
     if (!original) return nil;
 
     // template-рендеринг: маска формы + заливка цветом

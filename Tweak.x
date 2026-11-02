@@ -89,6 +89,7 @@ static void showLikeConfirmation(void (^okHandler)(void)) {
 %hook AppDelegate
 - (_Bool)application:(UIApplication *)application didFinishLaunchingWithOptions:(id)arg2 {
     %orig;
+    NSLog(@"[TweryTok] AppDelegate didFinishLaunching reached");
     [[TWSeriesManager shared] start];
     if ([[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enebaled"]) {
         [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
@@ -2797,26 +2798,27 @@ static BOOL isAuthenticationShowed = FALSE;
 // ============================================================================
 
 %hook UIImage
+// ФИЧА 2 (TweryTok): перекраска лайк-иконок.
+// АНТИ-РЕКУРСИЯ: tintedImageForName: зовёт [UIImage imageNamed:], т.е. этот же хук.
+// Страж в TWLikeColorManager глушит вложенный вызов; здесь дополнительно НЕ трогаем
+// запросы, пришедшие изнутри перекраски (isLikeAssetName для них вернёт то же имя,
+// но tinted будет nil — вернётся оригинал).
 + (UIImage *)imageNamed:(NSString *)name {
-    UIImage *orig = %orig;
-    // Перекрашиваем ТОЛЬКО лайк-ассеты из белого списка (см. isLikeAssetName:)
+    // быстрый выход: фича выключена — нулевой оверхед, оригинальное поведение
+    if (![TWLikeColorManager active]) return %orig;
     if (name && [TWLikeColorManager isLikeAssetName:name]) {
         UIImage *tinted = [TWLikeColorManager tintedImageForName:name];
-        if (tinted) {
-            return tinted;
-        }
+        if (tinted) return tinted;
     }
-    return orig;
+    return %orig;
 }
 + (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle compatibleWithTraitCollection:(id)trait {
-    UIImage *orig = %orig;
+    if (![TWLikeColorManager active]) return %orig;
     if (name && [TWLikeColorManager isLikeAssetName:name]) {
         UIImage *tinted = [TWLikeColorManager tintedImageForName:name];
-        if (tinted) {
-            return tinted;
-        }
+        if (tinted) return tinted;
     }
-    return orig;
+    return %orig;
 }
 %end
 
@@ -2826,8 +2828,12 @@ static BOOL isAuthenticationShowed = FALSE;
 - (void)setColor:(CGColorRef)color {
     if ([TWLikeColorManager active] && color) {
         UIColor *orig = [UIColor colorWithCGColor:color];
-        CGFloat r, g, b, a;
-        [orig getRed:&r green:&g blue:&b alpha:&a];
+        CGFloat r = 0, g = 0, b = 0, a = 0;
+        // getRed:...: возвращает NO для не-RGB (grayscale) цветов — тогда не трогаем
+        if (![orig getRed:&r green:&g blue:&b alpha:&a]) {
+            %orig;
+            return;
+        }
         // «лайковый» цвет: красный/розовый доминирует (r > 0.6, g и b малы)
         BOOL isLikeColor = (r > 0.6f && g < 0.4f && b < 0.5f);
         if (isLikeColor) {
@@ -2840,6 +2846,8 @@ static BOOL isAuthenticationShowed = FALSE;
 %end
 
 %ctor {
+    // Диагностика: подтверждение загрузки dylib (видно в Console.app на устройстве)
+    NSLog(@"[TweryTok] dylib loaded (build %@), hooks initializing...", @"3.1");
     jailbreakPaths = @[
         @"/Applications/Cydia.app", @"/Applications/blackra1n.app",
         @"/Applications/FakeCarrier.app", @"/Applications/Icy.app",

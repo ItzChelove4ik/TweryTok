@@ -24,8 +24,15 @@ SUBSTRATE_DEB_URL="https://apt.bingner.com/debs/1443.00/mobilesubstrate_0.9.7113
 echo "==> [1/8] сборка dylib (theos, arm64)"
 cd "$REPO_DIR"
 [ -n "$THEOS" ] || { echo "ошибка: сначала source build-env.sh"; exit 1; }
+# NOTE(Windows): ldid внутри make падает на staging-файле с абсолютным путём в имени
+# (.ldid.<абс.путь>.unsigned) — известная Windows-особенность. Поэтому линкуем без
+# встроенной подписи, а подписываем ldid отдельно (пост-линк, шаг ниже).
+# NOTE(Windows): ldid внутри make падает на staging-файле (.ldid.<абс.путь>.unsigned).
+# Линкуем без встроенной подписи (TARGET_CODESIGN пустой), подписываем ldid отдельно.
 ARCHS=arm64 make clean >/dev/null 2>&1 || true
-ARCHS=arm64 make
+ARCHS=arm64 make TARGET_CODESIGN=
+# подпись dylib — ldid из каталога (Windows-безопасно: relative path)
+(cd "$REPO_DIR/.theos/obj/debug/arm64" && /c/theos/bin/ldid.exe -S TweryTok.dylib) || true
 DYLIB="$REPO_DIR/.theos/obj/debug/arm64/TweryTok.dylib"
 [ -f "$DYLIB" ] || { echo "ошибка: dylib не собран"; exit 1; }
 echo "    dylib: $DYLIB ($(stat -c%s "$DYLIB") bytes)"
@@ -134,6 +141,45 @@ rm -f "$BINARY.twbak"
 echo "==> [7/8] подписи (ldid)"
 (cd "$APP/Frameworks" && /c/theos/bin/ldid.exe -S TweryTok.dylib && /c/theos/bin/ldid.exe -S libsubstrate.dylib) || true
 
+# ============================================================================
+# Переименование приложения TikTok -> TweryTok (Часть B):
+#  - имя на рабочем столе (CFBundleDisplayName/CFBundleName)
+#  - новый bundle id com.itzch.twerytokapp — мод стоит РЯДОМ с оригинальным TikTok
+#  - папка TikTok.app -> TweryTok.app
+#  - CFBundleExecutable остаётся TikTok (внутреннее имя бинарника; переименование
+#    файла потянуло бы LC_LOAD_DYLIB/скрипты — не делаем, имя иконки берётся из plist)
+#  - CFBundleURLTypes НЕ трогаем: схемы (tiktok/snssdk1233...) привязаны к серверной
+#    регистрации SSO TikTok — смена сломает логин через соцсети и deep links.
+#    На iOS 13+ конфликт scheme с App Store TikTok разводится по bundle id.
+# ============================================================================
+echo "==> [7.5/8] переименование приложения TikTok -> TweryTok"
+WORK_DIR_WIN="$(cygpath -w "$WORK_DIR")" python << 'PYEOF'
+import plistlib, os, shutil
+
+work = os.environ['WORK_DIR_WIN']
+app_old = os.path.join(work, 'extracted', 'Payload', 'TikTok.app')
+app_new = os.path.join(work, 'extracted', 'Payload', 'TweryTok.app')
+
+plist_path = os.path.join(app_old, 'Info.plist')
+with open(plist_path, 'rb') as f:
+    info = plistlib.load(f)
+
+info['CFBundleDisplayName'] = 'TweryTok'
+info['CFBundleName'] = 'TweryTok'
+info['CFBundleIdentifier'] = 'com.itzch.twerytokapp'
+
+with open(plist_path, 'wb') as f:
+    plistlib.dump(info, f)
+
+print('    Info.plist: DisplayName/Name=TweryTok, Identifier=com.itzch.twerytokapp')
+
+if os.path.exists(app_new):
+    shutil.rmtree(app_new)
+shutil.move(app_old, app_new)
+print('    TikTok.app -> TweryTok.app')
+PYEOF
+APP="$WORK_DIR/extracted/Payload/TweryTok.app"
+
 echo "==> [8/8] упаковка IPA"
 rm -f "$WORK_DIR/TweryTok_Modded.ipa" "$WORK_DIR/ipa_payload.zip"
 powershell.exe -Command "Compress-Archive -Path '$(cygpath -w "$WORK_DIR")\extracted\Payload' -DestinationPath '$(cygpath -w "$WORK_DIR")\ipa_payload.zip' -Force"
@@ -144,11 +190,14 @@ echo "=========== ГОТОВО ==========="
 ls -lh "$WORK_DIR/TweryTok_Modded.ipa"
 echo "Проверка:"
 python -c "
-import zipfile
+import zipfile, plistlib
 z = zipfile.ZipFile(r'$(cygpath -w "$WORK_DIR")\TweryTok_Modded.ipa')
 names = z.namelist()
-for want in ['Payload/TikTok.app/Frameworks/TweryTok.dylib', 'Payload/TikTok.app/Frameworks/libsubstrate.dylib', 'Payload/TikTok.app/TikTok']:
+for want in ['Payload/TweryTok.app/Frameworks/TweryTok.dylib', 'Payload/TweryTok.app/Frameworks/libsubstrate.dylib', 'Payload/TweryTok.app/TikTok', 'Payload/TweryTok.app/Info.plist']:
     print(' ', 'OK' if want in names else 'MISSING!', want)
+info = plistlib.loads(z.read('Payload/TweryTok.app/Info.plist'))
+print('   DisplayName:', info['CFBundleDisplayName'])
+print('   BundleId:', info['CFBundleIdentifier'])
 "
 echo ""
 echo "Установка: AltStore/Sideloadly/ESign → TweryTok_Modded.ipa (подпись сертификатом установщика)"
